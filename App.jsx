@@ -3,7 +3,6 @@ import { Briefcase, DollarSign, BarChart2, Users, FileText, Plus, Search, Trash2
 import { auth, db } from './firebase';
 import { onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut } from 'firebase/auth';
 import { collection, onSnapshot, addDoc, deleteDoc, doc, writeBatch, setDoc, updateDoc } from 'firebase/firestore';
-
 // =================================================================
 // 1. HOOKS & UTILS
 // =================================================================
@@ -99,7 +98,7 @@ const LoginScreen = ({ onLogin }) => {
 // 3. MAIN FUNCTIONAL MODULES (Sub-components)
 // =================================================================
 
-const CostStructure = ({ costs, settings, setSettings, estimatedIncome, setEstimatedIncome, handleAddQuickCost, handleDeleteCost, handleImportTSV, handleAddAsset, costsLoading }) => {
+const CostStructure = ({ costs, settings, onSettingChange, estimatedIncome, onEstimatedIncomeChange, handleAddQuickCost, handleDeleteCost, handleImportTSV, handleAddAsset, costsLoading }) => {
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isAssetModalOpen, setIsAssetModalOpen] = useState(false);
   const [importText, setImportText] = useState('');
@@ -107,6 +106,7 @@ const CostStructure = ({ costs, settings, setSettings, estimatedIncome, setEstim
   
   // Formulario de ingreso rápido
   const [quickCost, setQuickCost] = useState({ name: '', amount: '', type: 'Fijo', category: 'Operativo' });
+
   // Cálculos de KPIs
   const totalCosts = useMemo(() => costs.reduce((acc, cost) => acc + cost.amount, 0), [costs]);
   const totalFixedCosts = useMemo(() => costs.filter(c => c.type === 'Fijo').reduce((acc, cost) => acc + cost.amount, 0), [costs]);
@@ -301,7 +301,7 @@ const CostStructure = ({ costs, settings, setSettings, estimatedIncome, setEstim
   );
 };
 
-const ServicesManager = ({ services, setServices, bepHourValue }) => {
+const ServicesManager = ({ services, handleAddService, handleDeleteService, bepHourValue, servicesLoading }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [newService, setNewService] = useState({ name: '', description: '', hours: 1, margin: 30 });
@@ -1203,14 +1203,10 @@ function App() {
     capacityHours: 160,
   });
   const [costs, setCosts] = useState([]);
-  const [estimatedIncome, setEstimatedIncome] = useLocalStorage('agency_estimated_income', 5000000);
-  const [services, setServices] = useLocalStorage('agency_services', [
-    { id: 1, name: 'Diseño de Landing Page', description: 'Página única optimizada para conversión.', hours: 20, margin: 50, price: 1500000 },
-  ]);
-  const [clients, setClients] = useLocalStorage('agency_clients', [
-    { id: 1, name: 'Comercial ABC Ltda.', rut: '77.888.999-K' },
-  ]);
-  const [quotes, setQuotes] = useLocalStorage('agency_quotes', []);
+  const [estimatedIncome, setEstimatedIncome] = useState(5000000);
+  const [services, setServices] = useState([]);
+  const [clients, setClients] = useState([]);
+  const [quotes, setQuotes] = useState([]);
 
   // --- Auth Logic ---
   useEffect(() => {
