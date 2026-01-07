@@ -1,5 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Briefcase, DollarSign, BarChart2, Users, FileText, Plus, Search, Trash2, Edit, X, Calculator, Upload, Building, MoreVertical, Wallet, Monitor, CloudUpload, Mail, Phone, MapPin, UserCheck, User, Save, Download, RefreshCw, Edit3 } from 'lucide-react';
+import { Briefcase, DollarSign, BarChart2, Users, FileText, Plus, Search, Trash2, Edit, X, Calculator, Upload, Building, MoreVertical, Wallet, Monitor, CloudUpload, Mail, Phone, MapPin, UserCheck, User, Save, Download, RefreshCw, Edit3, LogOut } from 'lucide-react';
+import { auth, db } from './firebase';
+import { onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut } from 'firebase/auth';
 
 // =================================================================
 // 1. HOOKS & UTILS
@@ -94,6 +96,27 @@ const Select = ({ label, id, options, ...props }) => (
     </div>
 );
 
+// =================================================================
+// LOGIN SCREEN COMPONENT
+// =================================================================
+
+const LoginScreen = ({ onLogin }) => {
+  return (
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
+      <Card className="p-8 text-center max-w-sm">
+        <div className="w-16 h-16 bg-[#FFCC00] rounded-full flex items-center justify-center mx-auto mb-4">
+          <DollarSign size={32} className="text-black" />
+        </div>
+        <h1 className="text-2xl font-black mb-2">AgencyFinance</h1>
+        <p className="text-gray-500 mb-6">Tu centro de control financiero. Inicia sesión para continuar.</p>
+        <Button onClick={onLogin} className="w-full">
+          <svg className="w-4 h-4 mr-2" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512"><path fill="currentColor" d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 126 23.4 172.9 61.9l-76.2 76.2c-27.3-26.1-63.5-42.1-104.1-42.1-83.2 0-151.2 67.9-151.2 151.2s68 151.2 151.2 151.2c96.5 0 133.3-67.4 137.2-101.2H248v-95.1h236.3c2.3 12.7 3.7 26.1 3.7 40.8z"></path></svg>
+          Iniciar Sesión con Google
+        </Button>
+      </Card>
+    </div>
+  );
+};
 
 // =================================================================
 // 3. MAIN FUNCTIONAL MODULES (Sub-components)
@@ -219,7 +242,7 @@ const CostStructure = ({ costs, setCosts, settings, setSettings, estimatedIncome
       {/* 3. Formulario de Ingreso Rápido */}
       <Card className="p-4 bg-gray-50 border-dashed border-2">
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
-          <Input label="Concepto" placeholder="Ej: Suscripción Adobe" value={quickCost.name} onChange={e => setQuickCost({...quickQuickCost, name: e.target.value})} />
+          <Input label="Concepto" placeholder="Ej: Suscripción Adobe" value={quickCost.name} onChange={e => setQuickCost({...quickCost, name: e.target.value})} />
           <div>
             <label className="block text-[10px] font-bold uppercase text-gray-500 mb-1">Categoría</label>
             <select className="w-full p-2 text-sm bg-white border border-gray-300 rounded-md" value={quickCost.category} onChange={e => setQuickCost({...quickCost, category: e.target.value})}>
@@ -1219,6 +1242,10 @@ const TABS = [
 ];
 
 function App() {
+  // --- Auth State ---
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
   // --- State Management ---
   const [settings, setSettings] = useLocalStorage('agency_settings', {
     companyName: 'Tu Agencia SpA',
@@ -1244,6 +1271,29 @@ function App() {
   ]);
   const [quotes, setQuotes] = useLocalStorage('agency_quotes', []);
 
+  // --- Auth Logic ---
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setLoading(false);
+    });
+    // Cleanup subscription on unmount
+    return () => unsubscribe();
+  }, []);
+
+  const handleLogin = async () => {
+    const provider = new GoogleAuthProvider();
+    try {
+      await signInWithPopup(auth, provider);
+    } catch (error) {
+      console.error("Error durante el inicio de sesión:", error);
+    }
+  };
+
+  const handleLogout = async () => {
+    await signOut(auth);
+  };
+
   // --- Derived State ---
   const bepHourValue = useMemo(() => {
     const fixedCosts = costs.filter(c => c.type === 'Fijo').reduce((acc, cost) => acc + cost.amount, 0);
@@ -1265,6 +1315,18 @@ function App() {
     Análisis: { costs, quotes, services },
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="font-bold text-gray-500">Cargando aplicación...</p>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <LoginScreen onLogin={handleLogin} />;
+  }
+
   return (
     <div className="w-full min-h-screen bg-gray-100 font-sans">
       <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
@@ -1275,67 +1337,76 @@ function App() {
             </div>
             <span className="font-bold text-lg">AgencyFinance</span>
           </div>
-          <div className="relative">
-            <button
-              onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-              className={`p-2 rounded-full transition-all ${
-                isSettingsOpen ? 'bg-[#111111] text-[#FFCC00]' : 'bg-transparent text-gray-400 hover:text-gray-600'
-              }`}
-            >
-              <Building size={18} />
+          <div className="flex items-center gap-4">
+            <div className="text-right">
+              <p className="text-sm font-bold">{user.displayName}</p>
+              <p className="text-xs text-gray-500">{user.email}</p>
+            </div>
+            <button onClick={handleLogout} title="Cerrar Sesión" className="p-2 rounded-full text-gray-400 hover:bg-red-50 hover:text-red-500 transition-all">
+              <LogOut size={18} />
             </button>
-            
-            {isSettingsOpen && (
-              <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-2xl border border-gray-200 z-50 flex flex-col max-h-[80vh]">
-                {/* A. Encabezado del Panel */}
-                <div className="p-4 border-b border-gray-100 flex justify-between items-center">
-                  <div className="flex items-center gap-2">
-                    <Building size={16} className="text-gray-500" />
-                    <h4 className="font-bold text-sm text-[#111111]">Datos de mi Agencia</h4>
-                  </div>
-                  <button onClick={() => setIsSettingsOpen(false)} className="text-gray-400 hover:text-gray-600">
-                    <X size={18} />
-                  </button>
-                </div>
-
-                {/* B & C. Cuerpo del Panel */}
-                <div className="p-4 space-y-6 overflow-y-auto">
-                  {/* Identidad Visual */}
-                  <div className="space-y-3">
+            <div className="relative">
+              <button
+                onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+                className={`p-2 rounded-full transition-all ${
+                  isSettingsOpen ? 'bg-[#111111] text-[#FFCC00]' : 'bg-transparent text-gray-400 hover:text-gray-600'
+                }`}
+              >
+                <Building size={18} />
+              </button>
+              
+              {isSettingsOpen && (
+                <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-2xl border border-gray-200 z-50 flex flex-col max-h-[80vh]">
+                  {/* A. Encabezado del Panel */}
+                  <div className="p-4 border-b border-gray-100 flex justify-between items-center">
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Identidad Visual</span>
-                      <div className="flex-1 h-px bg-gray-100"></div>
+                      <Building size={16} className="text-gray-500" />
+                      <h4 className="font-bold text-sm text-[#111111]">Datos de mi Agencia</h4>
                     </div>
-                    <Input label="Logo URL" placeholder="https://..." value={settings.logoUrl} onChange={e => setSettings(s => ({...s, logoUrl: e.target.value}))} />
-                    <div>
-                      <label className="block text-[10px] font-bold uppercase text-gray-500 mb-1">Color Marca</label>
-                      <div className="flex gap-2">
-                        <div className="w-10 h-10 rounded border border-gray-200 shadow-sm" style={{ backgroundColor: settings.brandColor }}></div>
-                        <input type="color" value={settings.brandColor} onChange={e => setSettings(s => ({...s, brandColor: e.target.value}))} className="flex-1 h-10 p-1 bg-white border border-gray-300 rounded cursor-pointer" />
+                    <button onClick={() => setIsSettingsOpen(false)} className="text-gray-400 hover:text-gray-600">
+                      <X size={18} />
+                    </button>
+                  </div>
+
+                  {/* B & C. Cuerpo del Panel */}
+                  <div className="p-4 space-y-6 overflow-y-auto">
+                    {/* Identidad Visual */}
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Identidad Visual</span>
+                        <div className="flex-1 h-px bg-gray-100"></div>
+                      </div>
+                      <Input label="Logo URL" placeholder="https://..." value={settings.logoUrl} onChange={e => setSettings(s => ({...s, logoUrl: e.target.value}))} />
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase text-gray-500 mb-1">Color Marca</label>
+                        <div className="flex gap-2">
+                          <div className="w-10 h-10 rounded border border-gray-200 shadow-sm" style={{ backgroundColor: settings.brandColor }}></div>
+                          <input type="color" value={settings.brandColor} onChange={e => setSettings(s => ({...s, brandColor: e.target.value}))} className="flex-1 h-10 p-1 bg-white border border-gray-300 rounded cursor-pointer" />
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Datos de la Empresa */}
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Datos de la Empresa</span>
-                      <div className="flex-1 h-px bg-gray-100"></div>
+                    {/* Datos de la Empresa */}
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Datos de la Empresa</span>
+                        <div className="flex-1 h-px bg-gray-100"></div>
+                      </div>
+                      <Input label="Nombre Fantasía" value={settings.companyName} onChange={e => setSettings(s => ({...s, companyName: e.target.value}))} />
+                      <Input label="RUT Empresa" value={settings.rut} onChange={e => setSettings(s => ({...s, rut: formatRut(e.target.value)}))} />
+                      <Input label="Dirección" value={settings.address} onChange={e => setSettings(s => ({...s, address: e.target.value}))} />
+                      <Input label="Email Contacto" type="email" value={settings.email} onChange={e => setSettings(s => ({...s, email: e.target.value}))} />
+                      <Input label="Teléfono / WhatsApp" value={settings.phone} onChange={e => setSettings(s => ({...s, phone: e.target.value}))} />
                     </div>
-                    <Input label="Nombre Fantasía" value={settings.companyName} onChange={e => setSettings(s => ({...s, companyName: e.target.value}))} />
-                    <Input label="RUT Empresa" value={settings.rut} onChange={e => setSettings(s => ({...s, rut: formatRut(e.target.value)}))} />
-                    <Input label="Dirección" value={settings.address} onChange={e => setSettings(s => ({...s, address: e.target.value}))} />
-                    <Input label="Email Contacto" type="email" value={settings.email} onChange={e => setSettings(s => ({...s, email: e.target.value}))} />
-                    <Input label="Teléfono / WhatsApp" value={settings.phone} onChange={e => setSettings(s => ({...s, phone: e.target.value}))} />
+                  </div>
+
+                  {/* D. Pie del Panel */}
+                  <div className="p-4 border-t border-gray-100">
+                    <Button className="w-full" onClick={() => setIsSettingsOpen(false)}>Guardar</Button>
                   </div>
                 </div>
-
-                {/* D. Pie del Panel */}
-                <div className="p-4 border-t border-gray-100">
-                  <Button className="w-full" onClick={() => setIsSettingsOpen(false)}>Guardar</Button>
-                </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
         <nav className="px-6">
