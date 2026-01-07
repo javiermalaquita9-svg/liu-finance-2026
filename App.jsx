@@ -2,35 +2,11 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Briefcase, DollarSign, BarChart2, Users, FileText, Plus, Search, Trash2, Edit, X, Calculator, Upload, Building, MoreVertical, Wallet, Monitor, CloudUpload, Mail, Phone, MapPin, UserCheck, User, Save, Download, RefreshCw, Edit3, LogOut } from 'lucide-react';
 import { auth, db } from './firebase';
 import { onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut } from 'firebase/auth';
-import { collection, onSnapshot, addDoc, deleteDoc, doc, writeBatch } from 'firebase/firestore';
+import { collection, onSnapshot, addDoc, deleteDoc, doc, writeBatch, setDoc, updateDoc } from 'firebase/firestore';
 
 // =================================================================
 // 1. HOOKS & UTILS
 // =================================================================
-
-function useLocalStorage(key, initialValue) {
-  const [storedValue, setStoredValue] = useState(() => {
-    try {
-      const item = window.localStorage.getItem(key);
-      return item ? JSON.parse(item) : initialValue;
-    } catch (error) {
-      console.error(error);
-      return initialValue;
-    }
-  });
-
-  const setValue = (value) => {
-    try {
-      const valueToStore = value instanceof Function ? value(storedValue) : value;
-      setStoredValue(valueToStore);
-      window.localStorage.setItem(key, JSON.stringify(valueToStore));
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  return [storedValue, setValue];
-}
 
 const formatCurrency = (value) => new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(value);
 
@@ -154,7 +130,7 @@ const CostStructure = ({ costs, settings, setSettings, estimatedIncome, setEstim
           <input 
             type="number"
             value={settings.capacityHours}
-            onChange={e => setSettings(s => ({...s, capacityHours: Number(e.target.value)}))}
+            onChange={e => onSettingChange('capacityHours', Number(e.target.value))}
             className="text-2xl font-black bg-transparent focus:outline-none w-full p-0"
           />
           <p className="text-[10px] text-gray-400 mt-1 font-bold uppercase">Horas Facturables / Mes</p>
@@ -173,7 +149,7 @@ const CostStructure = ({ costs, settings, setSettings, estimatedIncome, setEstim
               type="number" 
               className="text-[10px] font-bold bg-gray-50 rounded px-1 w-20 focus:outline-none"
               value={estimatedIncome}
-              onChange={e => setEstimatedIncome(Number(e.target.value))}
+              onChange={e => onEstimatedIncomeChange(Number(e.target.value))}
             />
           </div>
           <p className={`text-2xl font-black ${cashFlowResult >= 0 ? 'text-[#7F54F5]' : 'text-red-500'}`}>
@@ -337,16 +313,8 @@ const ServicesManager = ({ services, setServices, bepHourValue }) => {
   const costoBase = newService.hours * bepHourValue;
   const precioSugerido = newService.margin < 100 ? costoBase / (1 - newService.margin / 100) : 0;
 
-  const handleSave = () => {
-    if (!newService.name) return;
-    setServices(s => [...s, { ...newService, id: Date.now(), price: precioSugerido }]);
-    setIsModalOpen(false);
-    setNewService({ name: '', description: '', hours: 1, margin: 30 });
-  };
+  const handleSave = () => { handleAddService({ ...newService, price: precioSugerido }); setIsModalOpen(false); setNewService({ name: '', description: '', hours: 1, margin: 30 }); };
 
-  const handleDelete = (id) => {
-    setServices(services.filter(s => s.id !== id));
-  };
 
   const getMarginBadgeStyle = (margin) => {
     if (margin >= 50) return 'bg-[#FFCC00] text-black';
@@ -388,6 +356,11 @@ const ServicesManager = ({ services, setServices, bepHourValue }) => {
 
       {/* C. Grid de Tarjetas de Servicio */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {servicesLoading && (
+          <div className="col-span-full text-center py-8 text-gray-400 italic">
+            Cargando servicios...
+          </div>
+        )}
         {filteredServices.map(service => (
           <Card key={service.id} className="relative p-5 flex flex-col h-full hover:shadow-md transition-shadow">
             <div className={`absolute top-4 right-4 text-[10px] font-black px-2 py-1 rounded-full uppercase ${getMarginBadgeStyle(service.margin)}`}>
@@ -412,7 +385,7 @@ const ServicesManager = ({ services, setServices, bepHourValue }) => {
                 <p className="text-[10px] font-bold text-gray-400 uppercase">Precio de Venta</p>
                 <p className="text-xl font-black text-[#7F54F5]">{formatCurrency(service.price)}</p>
               </div>
-              <button onClick={() => handleDelete(service.id)} className="p-2 text-gray-300 hover:text-red-500 transition-colors">
+              <button onClick={() => handleDeleteService(service.id)} className="p-2 text-gray-300 hover:text-red-500 transition-colors">
                 <Trash2 size={18} />
               </button>
             </div>
@@ -482,7 +455,7 @@ const ServicesManager = ({ services, setServices, bepHourValue }) => {
   );
 };
 
-const ClientsManager = ({ clients, setClients, quotes, setActiveTab, onNewQuoteForClient }) => {
+const ClientsManager = ({ clients, handleAddClient, handleDeleteClient, quotes, setActiveTab, onNewQuoteForClient, clientsLoading }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [newClient, setNewClient] = useState({
@@ -505,16 +478,9 @@ const ClientsManager = ({ clients, setClients, quotes, setActiveTab, onNewQuoteF
   };
 
   const handleSave = () => {
-    if (!newClient.name) return;
-    setClients(cs => [...cs, { ...newClient, id: Date.now(), lastTotal: 0 }]);
+    handleAddClient({ ...newClient, lastTotal: 0 });
     setIsModalOpen(false);
     setNewClient({ name: '', rut: '', giro: '', email: '', phone: '', address: '' });
-  };
-
-  const handleDeleteClient = (id) => {
-    if (window.confirm('¿Estás seguro de que deseas eliminar este cliente?')) {
-      setClients(clients.filter(c => c.id !== id));
-    }
   };
 
   return (
@@ -549,6 +515,11 @@ const ClientsManager = ({ clients, setClients, quotes, setActiveTab, onNewQuoteF
 
       {/* C. Grid de Tarjetas de Cliente */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {clientsLoading && (
+          <div className="col-span-full text-center py-8 text-gray-400 italic">
+            Cargando clientes...
+          </div>
+        )}
         {filteredClients.map(client => {
           const clientQuotes = quotes.filter(q => q.customer?.label.includes(client.name));
           return (
@@ -566,7 +537,7 @@ const ClientsManager = ({ clients, setClients, quotes, setActiveTab, onNewQuoteF
                   </div>
                 </div>
                 <button 
-                  onClick={() => handleDeleteClient(client.id)}
+                  onClick={() => window.confirm('¿Estás seguro?') && handleDeleteClient(client.id)}
                   className="text-gray-300 hover:text-red-500 transition-colors p-1"
                   title="Eliminar Cliente"
                 >
@@ -704,7 +675,7 @@ const TC_TEMPLATES = {
   "Retainer Mensual": "Servicio mensual recurrente. Facturación los primeros 5 días de cada mes."
 };
 
-const QuoteBuilder = ({ quotes, setQuotes, clients, setClients, services, settings, preloadedClient, setPreloadedClient }) => {
+const QuoteBuilder = ({ quotes, handleSaveQuote, handleDeleteQuote, handleUpdateQuote, clients, handleAddClient, handleUpdateClient, services, settings, preloadedClient, setPreloadedClient, quotesLoading }) => {
   const [currentQuote, setCurrentQuote] = useState({
     id: `COT-${Math.floor(Math.random() * 10000)}`,
     date: new Date().toISOString().split('T')[0],
@@ -780,24 +751,14 @@ const QuoteBuilder = ({ quotes, setQuotes, clients, setClients, services, settin
   }, [currentQuote.items]);
 
   const handleSave = () => {
-    const existingClientIndex = clients.findIndex(c => c.rut === currentQuote.customer.rut);
-    if (existingClientIndex > -1) {
-      const updatedClients = [...clients];
-      updatedClients[existingClientIndex] = { ...updatedClients[existingClientIndex], ...currentQuote.customer, lastTotal: totals.total };
-      setClients(updatedClients);
+    const existingClient = clients.find(c => c.rut === currentQuote.customer.rut && c.rut);
+    if (existingClient) {
+      handleUpdateClient(existingClient.id, { ...currentQuote.customer, lastTotal: totals.total });
     } else if (currentQuote.customer.name && currentQuote.customer.rut) {
-      setClients([...clients, { ...currentQuote.customer, id: Date.now(), lastTotal: totals.total }]);
+      handleAddClient({ ...currentQuote.customer, lastTotal: totals.total });
     }
 
-    const existingQuoteIndex = quotes.findIndex(q => q.id === currentQuote.id);
-    const quoteToSave = { ...currentQuote, total: totals.total };
-    if (existingQuoteIndex > -1) {
-      const updatedQuotes = [...quotes];
-      updatedQuotes[existingQuoteIndex] = quoteToSave;
-      setQuotes(updatedQuotes);
-    } else {
-      setQuotes([...quotes, quoteToSave]);
-    }
+    handleSaveQuote({ ...currentQuote, total: totals.total });
     alert("Cotización guardada y cliente actualizado.");
   };
 
@@ -1120,6 +1081,11 @@ const QuoteBuilder = ({ quotes, setQuotes, clients, setClients, services, settin
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
+              {quotesLoading && (
+                <tr>
+                  <td colSpan="6" className="text-center py-8 text-gray-400 italic">Cargando cotizaciones...</td>
+                </tr>
+              )}
               {quotes.map(q => (
                 <tr key={q.id} className="hover:bg-gray-50 transition-colors">
                   <td className="py-4 px-6 text-sm font-bold">{q.id}</td>
@@ -1136,10 +1102,7 @@ const QuoteBuilder = ({ quotes, setQuotes, clients, setClients, services, settin
                       }`}
                       value={q.status}
                       onChange={(e) => {
-                        const newQuotes = [...quotes];
-                        const idx = newQuotes.findIndex(item => item.id === q.id);
-                        newQuotes[idx].status = e.target.value;
-                        setQuotes(newQuotes);
+                        handleUpdateQuote(q.id, { status: e.target.value });
                       }}
                     >
                       {Object.keys(statusColors).map(s => <option key={s} value={s}>{s}</option>)}
@@ -1159,7 +1122,7 @@ const QuoteBuilder = ({ quotes, setQuotes, clients, setClients, services, settin
                       </button>
                       <button 
                         className="p-1 text-gray-400 hover:text-red-500 transition-colors"
-                        onClick={() => setQuotes(quotes.filter(item => item.id !== q.id))}
+                        onClick={() => window.confirm('¿Seguro?') && handleDeleteQuote(q.id)}
                       >
                         <Trash2 size={16} />
                       </button>
@@ -1220,10 +1183,16 @@ function App() {
   // --- Auth State ---
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [costsLoading, setCostsLoading] = useState(true);
+  const [dataLoading, setDataLoading] = useState({
+    costs: true,
+    settings: true,
+    services: true,
+    clients: true,
+    quotes: true,
+  });
 
   // --- State Management ---
-  const [settings, setSettings] = useLocalStorage('agency_settings', {
+  const [settings, setSettings] = useState({
     companyName: 'Tu Agencia SpA',
     rut: '76.123.456-7',
     address: 'Av. Ejemplo 123, Santiago',
@@ -1257,23 +1226,81 @@ function App() {
   useEffect(() => {
     if (!user) {
       setCosts([]);
-      setCostsLoading(false);
+      setDataLoading(s => ({...s, costs: false}));
       return;
     }
 
-    setCostsLoading(true);
+    setDataLoading(s => ({...s, costs: true}));
     const costsColRef = collection(db, 'users', user.uid, 'costs');
     
     const unsubscribe = onSnapshot(costsColRef, (snapshot) => {
       const userCosts = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
       setCosts(userCosts);
-      setCostsLoading(false);
+      setDataLoading(s => ({...s, costs: false}));
     }, (error) => {
       console.error("Error al obtener costos:", error);
-      setCostsLoading(false);
+      setDataLoading(s => ({...s, costs: false}));
     });
 
     return () => unsubscribe();
+  }, [user]);
+
+  // --- Firestore Data Sync for other collections ---
+  useEffect(() => {
+    if (!user) {
+      setServices([]); setClients([]); setQuotes([]);
+      setDataLoading(s => ({...s, services: false, clients: false, quotes: false}));
+      return;
+    }
+
+    const collectionsToSync = {
+      services: { setter: setServices, loaderKey: 'services' },
+      clients: { setter: setClients, loaderKey: 'clients' },
+      quotes: { setter: setQuotes, loaderKey: 'quotes' },
+    };
+
+    const unsubscribes = Object.entries(collectionsToSync).map(([name, { setter, loaderKey }]) => {
+      setDataLoading(s => ({...s, [loaderKey]: true}));
+      const colRef = collection(db, 'users', user.uid, name);
+      return onSnapshot(colRef, (snapshot) => {
+        const data = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+        setter(data);
+        setDataLoading(s => ({...s, [loaderKey]: false}));
+      }, (error) => {
+        console.error(`Error al obtener ${name}:`, error);
+        setDataLoading(s => ({...s, [loaderKey]: false}));
+      });
+    });
+
+    return () => unsubscribes.forEach(unsub => unsub());
+  }, [user]);
+
+  // --- Firestore Data Sync for Settings & Income ---
+  useEffect(() => {
+    if (!user) {
+      setSettings({
+        companyName: 'Tu Agencia SpA', rut: '76.123.456-7', address: 'Av. Ejemplo 123, Santiago',
+        logoUrl: '', brandColor: '#FFCC00', email: 'contacto@tuagencia.cl', phone: '+56 9 1234 5678',
+        capacityHours: 160,
+      });
+      setEstimatedIncome(5000000);
+      setDataLoading(s => ({...s, settings: false}));
+      return;
+    }
+    setDataLoading(s => ({...s, settings: true}));
+    const settingsDocRef = doc(db, 'users', user.uid, 'settings', 'main');
+    const unsubscribe = onSnapshot(settingsDocRef, (docSnap) => {
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            if (data.settings) setSettings(s => ({...s, ...data.settings}));
+            if (data.estimatedIncome) setEstimatedIncome(data.estimatedIncome);
+        }
+        setDataLoading(s => ({...s, settings: false}));
+    }, (error) => {
+        console.error("Error fetching settings:", error);
+        setDataLoading(s => ({...s, settings: false}));
+    });
+    return unsubscribe;
   }, [user]);
 
   const handleLogin = async () => {
@@ -1289,7 +1316,7 @@ function App() {
     await signOut(auth);
   };
 
-  // --- Data Modification Handlers (now in App.jsx) ---
+  // --- Costs Handlers ---
   const handleAddQuickCost = async (quickCost) => {
     if (!quickCost.name || !quickCost.amount || !user) return;
     const costsColRef = collection(db, 'users', user.uid, 'costs');
@@ -1344,6 +1371,62 @@ function App() {
     });
   };
 
+  // --- Settings & Income Handlers ---
+  const handleUpdateSettings = async (newSettings) => {
+    if (!user) return;
+    setSettings(newSettings); // Optimistic update
+    const settingsDocRef = doc(db, 'users', user.uid, 'settings', 'main');
+    await setDoc(settingsDocRef, { settings: newSettings }, { merge: true });
+  };
+
+  const handleUpdateEstimatedIncome = async (newIncome) => {
+    if (!user) return;
+    setEstimatedIncome(newIncome); // Optimistic update
+    const settingsDocRef = doc(db, 'users', user.uid, 'settings', 'main');
+    await setDoc(settingsDocRef, { estimatedIncome: newIncome }, { merge: true });
+  };
+
+  // --- Services Handlers ---
+  const handleAddService = async (service) => {
+    if (!user || !service.name) return;
+    const { id, ...serviceData } = service;
+    await addDoc(collection(db, 'users', user.uid, 'services'), serviceData);
+  };
+  const handleDeleteService = async (id) => {
+    if (!user) return;
+    await deleteDoc(doc(db, 'users', user.uid, 'services', id));
+  };
+
+  // --- Clients Handlers ---
+  const handleAddClient = async (client) => {
+    if (!user || !client.name) return;
+    const { id, ...clientData } = client;
+    await addDoc(collection(db, 'users', user.uid, 'clients'), clientData);
+  };
+  const handleDeleteClient = async (id) => {
+    if (!user) return;
+    await deleteDoc(doc(db, 'users', user.uid, 'clients', id));
+  };
+  const handleUpdateClient = async (id, data) => {
+    if (!user) return;
+    await updateDoc(doc(db, 'users', user.uid, 'clients', id), data);
+  };
+
+  // --- Quotes Handlers ---
+  const handleSaveQuote = async (quote) => {
+    if (!user) return;
+    const { id, ...quoteData } = quote;
+    await setDoc(doc(db, 'users', user.uid, 'quotes', id), quoteData, { merge: true });
+  };
+  const handleDeleteQuote = async (id) => {
+    if (!user) return;
+    await deleteDoc(doc(db, 'users', user.uid, 'quotes', id));
+  };
+  const handleUpdateQuote = async (id, data) => {
+    if (!user) return;
+    await updateDoc(doc(db, 'users', user.uid, 'quotes', id), data);
+  };
+
   // --- Derived State ---
   const bepHourValue = useMemo(() => {
     const fixedCosts = costs.filter(c => c.type === 'Fijo').reduce((acc, cost) => acc + cost.amount, 0);
@@ -1356,16 +1439,25 @@ function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   const ActiveComponent = TABS.find(tab => tab.name === activeTab)?.component;
-  
+  const [tempSettings, setTempSettings] = useState(settings);
+
+  useEffect(() => {
+    if (isSettingsOpen) {
+      setTempSettings(settings);
+    }
+  }, [isSettingsOpen, settings]);
+
   const componentProps = {
-    Finanzas: { costs, settings, setSettings, estimatedIncome, setEstimatedIncome, handleAddQuickCost, handleDeleteCost, handleImportTSV, handleAddAsset, costsLoading },
-    Servicios: { services, setServices, bepHourValue },
-    Clientes: { clients, setClients, quotes, setActiveTab, onNewQuoteForClient: setPreloadedClient },
-    Cotizador: { quotes, setQuotes, clients, setClients, services, settings, preloadedClient, setPreloadedClient },
+    Finanzas: { costs, settings, onSettingChange: (key, value) => handleUpdateSettings({...settings, [key]: value}), estimatedIncome, onEstimatedIncomeChange: handleUpdateEstimatedIncome, handleAddQuickCost, handleDeleteCost, handleImportTSV, handleAddAsset, costsLoading: dataLoading.costs },
+    Servicios: { services, handleAddService, handleDeleteService, bepHourValue, servicesLoading: dataLoading.services },
+    Clientes: { clients, handleAddClient, handleDeleteClient, quotes, setActiveTab, onNewQuoteForClient: setPreloadedClient, clientsLoading: dataLoading.clients },
+    Cotizador: { quotes, handleSaveQuote, handleDeleteQuote, handleUpdateQuote, clients, handleAddClient, handleUpdateClient, services, settings, preloadedClient, setPreloadedClient, quotesLoading: dataLoading.quotes },
     Análisis: { costs, quotes, services },
   };
 
-  if (loading) {
+  const isLoading = loading || (user && Object.values(dataLoading).some(Boolean));
+
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <p className="font-bold text-gray-500">Cargando aplicación...</p>
@@ -1426,12 +1518,12 @@ function App() {
                         <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Identidad Visual</span>
                         <div className="flex-1 h-px bg-gray-100"></div>
                       </div>
-                      <Input label="Logo URL" placeholder="https://..." value={settings.logoUrl} onChange={e => setSettings(s => ({...s, logoUrl: e.target.value}))} />
+                    <Input label="Logo URL" placeholder="https://..." value={tempSettings.logoUrl} onChange={e => setTempSettings(s => ({...s, logoUrl: e.target.value}))} />
                       <div>
                         <label className="block text-[10px] font-bold uppercase text-gray-500 mb-1">Color Marca</label>
                         <div className="flex gap-2">
-                          <div className="w-10 h-10 rounded border border-gray-200 shadow-sm" style={{ backgroundColor: settings.brandColor }}></div>
-                          <input type="color" value={settings.brandColor} onChange={e => setSettings(s => ({...s, brandColor: e.target.value}))} className="flex-1 h-10 p-1 bg-white border border-gray-300 rounded cursor-pointer" />
+                        <div className="w-10 h-10 rounded border border-gray-200 shadow-sm" style={{ backgroundColor: tempSettings.brandColor }}></div>
+                        <input type="color" value={tempSettings.brandColor} onChange={e => setTempSettings(s => ({...s, brandColor: e.target.value}))} className="flex-1 h-10 p-1 bg-white border border-gray-300 rounded cursor-pointer" />
                         </div>
                       </div>
                     </div>
@@ -1442,17 +1534,17 @@ function App() {
                         <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Datos de la Empresa</span>
                         <div className="flex-1 h-px bg-gray-100"></div>
                       </div>
-                      <Input label="Nombre Fantasía" value={settings.companyName} onChange={e => setSettings(s => ({...s, companyName: e.target.value}))} />
-                      <Input label="RUT Empresa" value={settings.rut} onChange={e => setSettings(s => ({...s, rut: formatRut(e.target.value)}))} />
-                      <Input label="Dirección" value={settings.address} onChange={e => setSettings(s => ({...s, address: e.target.value}))} />
-                      <Input label="Email Contacto" type="email" value={settings.email} onChange={e => setSettings(s => ({...s, email: e.target.value}))} />
-                      <Input label="Teléfono / WhatsApp" value={settings.phone} onChange={e => setSettings(s => ({...s, phone: e.target.value}))} />
+                    <Input label="Nombre Fantasía" value={tempSettings.companyName} onChange={e => setTempSettings(s => ({...s, companyName: e.target.value}))} />
+                    <Input label="RUT Empresa" value={tempSettings.rut} onChange={e => setTempSettings(s => ({...s, rut: formatRut(e.target.value)}))} />
+                    <Input label="Dirección" value={tempSettings.address} onChange={e => setTempSettings(s => ({...s, address: e.target.value}))} />
+                    <Input label="Email Contacto" type="email" value={tempSettings.email} onChange={e => setTempSettings(s => ({...s, email: e.target.value}))} />
+                    <Input label="Teléfono / WhatsApp" value={tempSettings.phone} onChange={e => setTempSettings(s => ({...s, phone: e.target.value}))} />
                     </div>
                   </div>
 
                   {/* D. Pie del Panel */}
                   <div className="p-4 border-t border-gray-100">
-                    <Button className="w-full" onClick={() => setIsSettingsOpen(false)}>Guardar</Button>
+                  <Button className="w-full" onClick={() => { handleUpdateSettings(tempSettings); setIsSettingsOpen(false); }}>Guardar</Button>
                   </div>
                 </div>
               )}
