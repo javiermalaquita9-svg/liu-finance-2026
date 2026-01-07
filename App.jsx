@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Briefcase, DollarSign, BarChart2, Users, FileText, Plus, Search, Trash2, Edit, X, Calculator, Upload, Building, MoreVertical, Wallet, Monitor, CloudUpload, Mail, Phone, MapPin, UserCheck, User, Save, Download, RefreshCw, Edit3, LogOut } from 'lucide-react';
 import { auth, db } from './firebase';
 import { onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut } from 'firebase/auth';
+import { collection, onSnapshot, addDoc, deleteDoc, doc, writeBatch } from 'firebase/firestore';
 
 // =================================================================
 // 1. HOOKS & UTILS
@@ -122,7 +123,7 @@ const LoginScreen = ({ onLogin }) => {
 // 3. MAIN FUNCTIONAL MODULES (Sub-components)
 // =================================================================
 
-const CostStructure = ({ costs, setCosts, settings, setSettings, estimatedIncome, setEstimatedIncome }) => {
+const CostStructure = ({ costs, settings, setSettings, estimatedIncome, setEstimatedIncome, handleAddQuickCost, handleDeleteCost, handleImportTSV, handleAddAsset, costsLoading }) => {
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isAssetModalOpen, setIsAssetModalOpen] = useState(false);
   const [importText, setImportText] = useState('');
@@ -130,50 +131,11 @@ const CostStructure = ({ costs, setCosts, settings, setSettings, estimatedIncome
   
   // Formulario de ingreso rápido
   const [quickCost, setQuickCost] = useState({ name: '', amount: '', type: 'Fijo', category: 'Operativo' });
-
   // Cálculos de KPIs
   const totalCosts = useMemo(() => costs.reduce((acc, cost) => acc + cost.amount, 0), [costs]);
   const totalFixedCosts = useMemo(() => costs.filter(c => c.type === 'Fijo').reduce((acc, cost) => acc + cost.amount, 0), [costs]);
   const bepHourValue = useMemo(() => (settings.capacityHours > 0 ? totalFixedCosts / settings.capacityHours : 0), [totalFixedCosts, settings.capacityHours]);
   const cashFlowResult = estimatedIncome - totalCosts;
-
-  const handleAddQuickCost = () => {
-    if (!quickCost.name || !quickCost.amount) return;
-    setCosts([...costs, { ...quickCost, amount: Number(quickCost.amount), id: Date.now() }]);
-    setQuickCost({ name: '', amount: '', type: 'Fijo', category: 'Operativo' });
-  };
-
-  const handleDeleteCost = (id) => {
-    setCosts(costs.filter(c => c.id !== id));
-  };
-
-  const handleImportTSV = () => {
-    const lines = importText.split('\n');
-    const newCosts = lines.map(line => {
-      const [name, amount, type, category] = line.split('\t');
-      if (name && amount) {
-        return { id: Math.random(), name, amount: Number(amount.replace(/[^0-9]/g, '')), type: type || 'Fijo', category: category || 'General' };
-      }
-      return null;
-    }).filter(Boolean);
-    setCosts([...costs, ...newCosts]);
-    setIsImportModalOpen(false);
-    setImportText('');
-  };
-
-  const handleAddAsset = () => {
-    const monthlyDepreciation = newAsset.value / (newAsset.years * 12);
-    setCosts([...costs, { 
-      id: Date.now(), 
-      name: `Depreciación: ${newAsset.name}`, 
-      amount: Math.round(monthlyDepreciation), 
-      type: 'Fijo', 
-      category: 'Tecnología',
-      isAsset: true 
-    }]);
-    setIsAssetModalOpen(false);
-    setNewAsset({ name: '', value: 0, years: 3 });
-  };
 
   const categories = ['Administrativo', 'Operativo', 'Tecnología', 'RRHH', 'Ventas'];
 
@@ -257,7 +219,10 @@ const CostStructure = ({ costs, setCosts, settings, setSettings, estimatedIncome
               <option value="Variable">Variable</option>
             </select>
           </div>
-          <Button onClick={handleAddQuickCost} className="w-full"><Plus size={16} /> Añadir</Button>
+          <Button onClick={() => {
+            handleAddQuickCost(quickCost);
+            setQuickCost({ name: '', amount: '', type: 'Fijo', category: 'Operativo' });
+          }} className="w-full"><Plus size={16} /> Añadir</Button>
         </div>
       </Card>
 
@@ -274,6 +239,13 @@ const CostStructure = ({ costs, setCosts, settings, setSettings, estimatedIncome
             </tr>
           </thead>
           <tbody>
+            {costsLoading && (
+              <tr>
+                <td colSpan="5" className="text-center py-8 text-gray-400 italic">
+                  Cargando costos...
+                </td>
+              </tr>
+            )}
             {costs.map(cost => (
               <tr key={cost.id} className="border-b border-gray-100">
                 <td className="py-3 px-3 text-sm font-medium flex items-center gap-2">
@@ -317,7 +289,7 @@ const CostStructure = ({ costs, setCosts, settings, setSettings, estimatedIncome
           />
           <div className="mt-4 flex justify-end gap-2">
             <Button variant="secondary" onClick={() => setIsImportModalOpen(false)}>Cancelar</Button>
-            <Button onClick={handleImportTSV}>Procesar Carga</Button>
+            <Button onClick={() => { handleImportTSV(importText); setIsImportModalOpen(false); setImportText(''); }}>Procesar Carga</Button>
           </div>
         </div>
       </Modal>
@@ -342,7 +314,10 @@ const CostStructure = ({ costs, setCosts, settings, setSettings, estimatedIncome
           </div>
           <div className="mt-6 flex justify-end gap-2">
             <Button variant="secondary" onClick={() => setIsAssetModalOpen(false)}>Cancelar</Button>
-            <Button onClick={handleAddAsset}>Agregar a Costos Fijos</Button>
+            <Button onClick={() => { 
+              handleAddAsset(newAsset); 
+              setNewAsset({ name: '', value: 0, years: 3 }); 
+            }}>Agregar a Costos Fijos</Button>
           </div>
         </div>
       </Modal>
@@ -1245,6 +1220,7 @@ function App() {
   // --- Auth State ---
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [costsLoading, setCostsLoading] = useState(true);
 
   // --- State Management ---
   const [settings, setSettings] = useLocalStorage('agency_settings', {
@@ -1257,11 +1233,7 @@ function App() {
     phone: '+56 9 1234 5678',
     capacityHours: 160,
   });
-  const [costs, setCosts] = useLocalStorage('agency_costs', [
-    { id: 1, name: 'Arriendo Oficina', amount: 500000, type: 'Fijo', category: 'Operaciones' },
-    { id: 2, name: 'Software (Suscripción)', amount: 50000, type: 'Variable', category: 'Herramientas' },
-    { id: 3, name: 'Sueldos', amount: 2000000, type: 'Fijo', category: 'RRHH' },
-  ]);
+  const [costs, setCosts] = useState([]);
   const [estimatedIncome, setEstimatedIncome] = useLocalStorage('agency_estimated_income', 5000000);
   const [services, setServices] = useLocalStorage('agency_services', [
     { id: 1, name: 'Diseño de Landing Page', description: 'Página única optimizada para conversión.', hours: 20, margin: 50, price: 1500000 },
@@ -1281,6 +1253,29 @@ function App() {
     return () => unsubscribe();
   }, []);
 
+  // --- Firestore Data Sync for Costs ---
+  useEffect(() => {
+    if (!user) {
+      setCosts([]);
+      setCostsLoading(false);
+      return;
+    }
+
+    setCostsLoading(true);
+    const costsColRef = collection(db, 'users', user.uid, 'costs');
+    
+    const unsubscribe = onSnapshot(costsColRef, (snapshot) => {
+      const userCosts = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+      setCosts(userCosts);
+      setCostsLoading(false);
+    }, (error) => {
+      console.error("Error al obtener costos:", error);
+      setCostsLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [user]);
+
   const handleLogin = async () => {
     const provider = new GoogleAuthProvider();
     try {
@@ -1292,6 +1287,61 @@ function App() {
 
   const handleLogout = async () => {
     await signOut(auth);
+  };
+
+  // --- Data Modification Handlers (now in App.jsx) ---
+  const handleAddQuickCost = async (quickCost) => {
+    if (!quickCost.name || !quickCost.amount || !user) return;
+    const costsColRef = collection(db, 'users', user.uid, 'costs');
+    await addDoc(costsColRef, { 
+      name: quickCost.name,
+      amount: Number(quickCost.amount),
+      type: quickCost.type,
+      category: quickCost.category,
+    });
+  };
+
+  const handleDeleteCost = async (id) => {
+    if (!user) return;
+    const costDocRef = doc(db, 'users', user.uid, 'costs', id);
+    await deleteDoc(costDocRef);
+  };
+
+  const handleImportTSV = async (importText) => {
+    if (!user) return;
+    const lines = importText.split('\n').filter(Boolean);
+    if (lines.length === 0) return;
+
+    const costsColRef = collection(db, 'users', user.uid, 'costs');
+    const batch = writeBatch(db);
+
+    lines.forEach(line => {
+      const [name, amount, type, category] = line.split('\t');
+      if (name && amount) {
+        const newCost = {
+          name, 
+          amount: Number(amount.replace(/[^0-9]/g, '')), 
+          type: type || 'Fijo', 
+          category: category || 'General'
+        };
+        const newDocRef = doc(costsColRef); // Create a new doc with a random ID
+        batch.set(newDocRef, newCost);
+      }
+    });
+    await batch.commit();
+  };
+
+  const handleAddAsset = async (newAsset) => {
+    if (!user || !newAsset.name || !newAsset.value) return;
+    const monthlyDepreciation = newAsset.value / (newAsset.years * 12);
+    const costsColRef = collection(db, 'users', user.uid, 'costs');
+    await addDoc(costsColRef, { 
+      name: `Depreciación: ${newAsset.name}`, 
+      amount: Math.round(monthlyDepreciation), 
+      type: 'Fijo', 
+      category: 'Tecnología',
+      isAsset: true 
+    });
   };
 
   // --- Derived State ---
@@ -1306,9 +1356,9 @@ function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   const ActiveComponent = TABS.find(tab => tab.name === activeTab)?.component;
-
+  
   const componentProps = {
-    Finanzas: { costs, setCosts, settings, setSettings, estimatedIncome, setEstimatedIncome },
+    Finanzas: { costs, settings, setSettings, estimatedIncome, setEstimatedIncome, handleAddQuickCost, handleDeleteCost, handleImportTSV, handleAddAsset, costsLoading },
     Servicios: { services, setServices, bepHourValue },
     Clientes: { clients, setClients, quotes, setActiveTab, onNewQuoteForClient: setPreloadedClient },
     Cotizador: { quotes, setQuotes, clients, setClients, services, settings, preloadedClient, setPreloadedClient },
