@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { LayoutDashboard, Wallet, Users, FileText, Settings, Briefcase, Building2, X } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
 import { 
   AgencyCost, AgencyService, AgencyClient, AgencyQuote, AgencySettings, TabView 
 } from './types';
@@ -17,9 +18,8 @@ import { Input } from './components/ui/Input';
 
 const App: React.FC = () => {
   // Global State
-  const [activeTab, setActiveTab] = useState<TabView>('analytics');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-
+  const location = useLocation();
   // Data Stores (persisted in a real app, just state here for demo)
   const [settings, setSettings] = useState<AgencySettings>(() => {
     const saved = localStorage.getItem('liu_settings');
@@ -57,12 +57,21 @@ const App: React.FC = () => {
   const totalFixedCosts = costs.filter(c => c.type === 'Fijo').reduce((acc, c) => acc + c.amount, 0);
   const bepHourlyRate = calculateBEP(totalFixedCosts, settings.capacityHours);
 
+  const getCurrentTabFromPath = (pathname: string): TabView => {
+    if (pathname.startsWith('/finances')) return 'finances';
+    if (pathname.startsWith('/services')) return 'services';
+    if (pathname.startsWith('/clients')) return 'clients';
+    if (pathname.startsWith('/quotes')) return 'quotes';
+    return 'analytics'; // Default tab for '/'
+  };
+  const activeTab = getCurrentTabFromPath(location.pathname);
+
   const navigation = [
-    { id: 'analytics', label: 'Análisis', icon: <LayoutDashboard size={18} /> },
-    { id: 'finances', label: 'Finanzas', icon: <Wallet size={18} /> },
-    { id: 'services', label: 'Servicios', icon: <Briefcase size={18} /> },
-    { id: 'clients', label: 'Clientes', icon: <Users size={18} /> },
-    { id: 'quotes', label: 'Cotizador', icon: <FileText size={18} /> },
+    { id: 'analytics', to: '/', label: 'Análisis', icon: <LayoutDashboard size={18} /> },
+    { id: 'finances', to: '/finances', label: 'Finanzas', icon: <Wallet size={18} /> },
+    { id: 'services', to: '/services', label: 'Servicios', icon: <Briefcase size={18} /> },
+    { id: 'clients', to: '/clients', label: 'Clientes', icon: <Users size={18} /> },
+    { id: 'quotes', to: '/quotes', label: 'Cotizador', icon: <FileText size={18} /> },
   ];
 
   const handleUpdateSettings = (key: keyof AgencySettings, value: any) => {
@@ -84,9 +93,9 @@ const App: React.FC = () => {
                {/* Nav Links */}
               <nav className="hidden md:flex space-x-1">
                 {navigation.map((item) => (
-                  <button
+                  <Link
                     key={item.id}
-                    onClick={() => setActiveTab(item.id as TabView)}
+                    to={item.to}
                     className={`
                       px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2
                       ${activeTab === item.id 
@@ -96,7 +105,7 @@ const App: React.FC = () => {
                   >
                     {item.icon}
                     {item.label}
-                  </button>
+                  </Link>
                 ))}
               </nav>
 
