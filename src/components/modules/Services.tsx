@@ -1,18 +1,21 @@
 import React, { useState } from 'react';
-import { Plus, Search, Tag, Clock, ArrowRight } from 'lucide-react';
+import { useOutletContext } from 'react-router-dom'; // <--- IMPORTANTE
+import { Plus, Search, Tag, Clock } from 'lucide-react';
 import { AgencyService } from '../../types';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
 import { Input } from '../ui/Input';
 import { formatCurrency, generateId } from '../../utils/formatters';
 
-interface ServicesModuleProps {
+interface AgencyContextType {
   services: AgencyService[];
   setServices: (services: AgencyService[]) => void;
   bepHourlyRate: number;
 }
 
-export const ServicesModule: React.FC<ServicesModuleProps> = ({ services, setServices, bepHourlyRate }) => {
+export const ServicesModule: React.FC = () => {
+  const { services, setServices, bepHourlyRate } = useOutletContext<AgencyContextType>();
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   
@@ -24,9 +27,6 @@ export const ServicesModule: React.FC<ServicesModuleProps> = ({ services, setSer
 
   const calculateSuggestedPrice = (hours: number, marginPercent: number) => {
     const cost = hours * bepHourlyRate;
-    // Price = Cost / (1 - Margin) for Gross Margin
-    // But let's stick to MarkUp for safer calculation if margin is near 100%
-    // Let's use Margin on Sales: Price = Cost / (1 - Margin/100)
     const marginDecimal = marginPercent / 100;
     if (marginDecimal >= 1) return 0;
     return Math.round(cost / (1 - marginDecimal));

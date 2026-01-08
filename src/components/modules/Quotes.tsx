@@ -1,13 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { Search, Plus, Trash2, Download, FileText, CheckCircle, Clock } from 'lucide-react';
+import React, { useState } from 'react';
+import { useOutletContext } from 'react-router-dom'; // <--- IMPORTANTE
+import { Search, Plus, Trash2, Download } from 'lucide-react';
 import { AgencyClient, AgencyService, AgencyQuote, QuoteStatus, QuoteItem, AgencySettings } from '../../types';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
 import { Input } from '../ui/Input';
-import { generateId, formatCurrency, formatRut } from '../../utils/formatters';
+import { generateId, formatCurrency } from '../../utils/formatters';
 import { DEFAULT_TERMS } from '../../constants';
 
-interface QuotesModuleProps {
+interface AgencyContextType {
   clients: AgencyClient[];
   services: AgencyService[];
   quotes: AgencyQuote[];
@@ -15,7 +16,9 @@ interface QuotesModuleProps {
   settings: AgencySettings;
 }
 
-export const QuotesModule: React.FC<QuotesModuleProps> = ({ clients, services, quotes, setQuotes, settings }) => {
+export const QuotesModule: React.FC = () => {
+  const { clients, services, quotes, setQuotes, settings } = useOutletContext<AgencyContextType>();
+
   const [selectedClient, setSelectedClient] = useState<AgencyClient | null>(null);
   const [clientSearch, setClientSearch] = useState('');
   const [items, setItems] = useState<QuoteItem[]>([]);

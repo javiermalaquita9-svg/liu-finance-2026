@@ -1,19 +1,28 @@
 import React, { useState } from 'react';
+import { useOutletContext } from 'react-router-dom'; // <--- IMPORTANTE
 import { Plus, Trash2, Upload, Calculator, TrendingUp, DollarSign, Activity, PieChart } from 'lucide-react';
-import { AgencyCost, CostType } from '../../types';
+import { AgencyCost, CostType, AgencySettings } from '../../types';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
 import { Input } from '../ui/Input';
 import { formatCurrency, generateId } from '../../utils/formatters';
 
-interface CostsModuleProps {
+// Definimos lo que viene del Outlet (Contexto)
+interface AgencyContextType {
   costs: AgencyCost[];
   setCosts: (costs: AgencyCost[]) => void;
-  capacity: number;
-  setCapacity: (hours: number) => void;
+  settings: AgencySettings;
+  handleUpdateSettings: (key: keyof AgencySettings, value: any) => void;
 }
 
-export const CostsModule: React.FC<CostsModuleProps> = ({ costs, setCosts, capacity, setCapacity }) => {
+export const CostsModule: React.FC = () => {
+  // Conectamos al contexto
+  const { costs, setCosts, settings, handleUpdateSettings } = useOutletContext<AgencyContextType>();
+
+  // Mapeamos las variables para que el resto del código funcione igual
+  const capacity = settings.capacityHours;
+  const setCapacity = (val: number) => handleUpdateSettings('capacityHours', val);
+
   const [newCostName, setNewCostName] = useState('');
   const [newCostAmount, setNewCostAmount] = useState('');
   const [newCostType, setNewCostType] = useState<CostType>(CostType.FIXED);

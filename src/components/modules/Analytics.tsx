@@ -1,27 +1,34 @@
 import React from 'react';
+import { useOutletContext } from 'react-router-dom'; // <--- IMPORTANTE
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
   LineChart, Line, ReferenceLine, Legend 
 } from 'recharts';
 import { Card } from '../ui/Card';
-import { AgencyCost, AgencyService, CostType } from '../../types';
+import { AgencyCost, AgencyService, CostType, AgencySettings } from '../../types'; // Asegúrate de importar AgencySettings
 import { formatCurrency, calculateBEP } from '../../utils/formatters';
 import { MONTH_NAMES } from '../../constants';
 
-interface AnalyticsModuleProps {
+// Definimos qué datos vienen del Contexto (lo que envía App.tsx)
+interface AgencyContextType {
   costs: AgencyCost[];
   services: AgencyService[];
-  capacity: number;
+  settings: AgencySettings;
 }
 
-export const AnalyticsModule: React.FC<AnalyticsModuleProps> = ({ costs, services, capacity }) => {
+export const AnalyticsModule: React.FC = () => {
+  // 1. Aquí "pescamos" los datos del contexto en lugar de recibirlos por props
+  const { costs, services, settings } = useOutletContext<AgencyContextType>();
+  
+  // Mapeamos la capacidad desde settings
+  const capacity = settings.capacityHours; 
+
   const totalFixed = costs.filter(c => c.type === CostType.FIXED).reduce((acc, c) => acc + c.amount, 0);
   const totalVariable = costs.filter(c => c.type === CostType.VARIABLE).reduce((acc, c) => acc + c.amount, 0);
   const totalMonthlyCost = totalFixed + totalVariable;
 
   // Mock Projection Data (Cash Flow)
   const cashFlowData = MONTH_NAMES.map((month, index) => {
-    // Simulate some growth and seasonality
     const growthFactor = 1 + (index * 0.05);
     const seasonality = index === 11 || index === 5 ? 1.2 : 1;
     const estimatedSales = (totalMonthlyCost * 1.3) * growthFactor * seasonality;
@@ -35,17 +42,16 @@ export const AnalyticsModule: React.FC<AnalyticsModuleProps> = ({ costs, service
   });
 
   // BEP Chart Data
-  // We need to show where Revenue crosses Total Costs
   const avgServicePricePerHour = services.length > 0 
     ? services.reduce((acc, s) => acc + (s.price / s.hours), 0) / services.length
-    : calculateBEP(totalFixed, capacity) * 1.5; // Fallback
+    : calculateBEP(totalFixed, capacity) * 1.5;
 
   const bepPoints = [];
   const steps = 10;
   for (let i = 0; i <= steps; i++) {
     const hours = (capacity / steps) * i;
     const revenue = hours * avgServicePricePerHour;
-    const cost = totalFixed + (hours * (totalVariable / capacity)); // Simplified variable cost allocation
+    const cost = totalFixed + (hours * (totalVariable / capacity || 0)); 
     bepPoints.push({
       hours: Math.round(hours),
       Ventas: Math.round(revenue),
@@ -94,7 +100,7 @@ export const AnalyticsModule: React.FC<AnalyticsModuleProps> = ({ costs, service
         </Card>
       </div>
 
-      {/* Detailed Matrix Table */}
+      {/* Matrix Table */}
       <Card noPadding>
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-center">

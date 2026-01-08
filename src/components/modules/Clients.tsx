@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useOutletContext } from 'react-router-dom'; // <--- IMPORTANTE
 import { UserPlus, Mail, Phone, MapPin, Search, Calendar } from 'lucide-react';
 import { AgencyClient } from '../../types';
 import { Button } from '../ui/Button';
@@ -6,12 +7,14 @@ import { Card } from '../ui/Card';
 import { Input } from '../ui/Input';
 import { generateId, formatRut, formatCurrency } from '../../utils/formatters';
 
-interface ClientsModuleProps {
+interface AgencyContextType {
   clients: AgencyClient[];
   setClients: (clients: AgencyClient[]) => void;
 }
 
-export const ClientsModule: React.FC<ClientsModuleProps> = ({ clients, setClients }) => {
+export const ClientsModule: React.FC = () => {
+  const { clients, setClients } = useOutletContext<AgencyContextType>();
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   

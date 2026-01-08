@@ -1,6 +1,6 @@
 import { createBrowserRouter } from "react-router-dom";
-import App from "./App";
-import { AnalyticsModule } from "./components/modules/Analytics";
+import App from "./App"; // Antes era "../App"
+import { AnalyticsModule } from "./components/modules/Analytics"; // Antes era "../components..."
 import { CostsModule } from "./components/modules/Costs";
 import { ServicesModule } from "./components/modules/Services";
 import { ClientsModule } from "./components/modules/Clients";
@@ -13,7 +13,7 @@ export const router = createBrowserRouter(
       element: <App />,
       children: [
         {
-          index: true, // Ruta por defecto (ej. /liu-finance-2026/)
+          index: true, 
           element: <AnalyticsModule />,
         },
         { path: "finances", element: <CostsModule /> },
@@ -24,6 +24,6 @@ export const router = createBrowserRouter(
     },
   ],
   {
-    basename: "/liu-finance-2026/",
+    basename: import.meta.env.BASE_URL,
   }
 );
