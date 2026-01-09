@@ -770,8 +770,9 @@ const QuoteBuilder = ({ quotes, handleSaveQuote, handleDeleteQuote, handleUpdate
       margin: 0,
       filename: `${currentQuote.id}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true, letterRendering: true },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      html2canvas: { scale: 3, useCORS: true, letterRendering: true },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
     };
 
     window.html2pdf().from(element).set(opt).save().then(() => {
@@ -902,7 +903,7 @@ const QuoteBuilder = ({ quotes, handleSaveQuote, handleDeleteQuote, handleUpdate
           </Card>
 
           {/* The Paper */}
-          <div id="quote-sheet" className="bg-white mx-auto shadow-xl p-12 min-h-[800px] relative overflow-hidden" style={{ width: '210mm' }}>
+          <div id="quote-sheet" className="bg-white mx-auto shadow-xl p-12 relative overflow-hidden" style={{ width: '210mm', height: '297mm' }}>
             <header className="flex justify-between items-start mb-8">
               <div className="space-y-2">
                 {settings.logoUrl && <img src={settings.logoUrl} alt="Logo" className="h-16 object-contain" />}

@@ -14,6 +14,10 @@ const EditableField = ({ value, onChange, placeholder, className = '' }) => (
 );
 
 export function Preview({ quote, setQuote }) {
+  const handleFieldChange = (field) => (e) => {
+    setQuote({ ...quote, [field]: e.target.value });
+  };
+
   const handleGeneratePdf = () => {
     const element = document.getElementById('quote-sheet');
     const opt = {
@@ -45,13 +49,13 @@ export function Preview({ quote, setQuote }) {
           <div>
             <EditableField
               value={quote.id || ''}
-              onChange={(e) => setQuote({ ...quote, id: e.target.value })}
+              onChange={handleFieldChange('id')}
               placeholder="N° Cotización"
               className="text-right font-semibold"
             />
             <EditableField
               value={quote.date || new Date().toLocaleDateString('es-CL')}
-              onChange={(e) => setQuote({ ...quote, date: e.target.value })}
+              onChange={handleFieldChange('date')}
               placeholder="Fecha"
               className="text-right"
             />
