@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useOutletContext } from 'react-router-dom'; // <--- IMPORTANTE
-import { Search, Plus, Trash2, Download } from 'lucide-react';
-import { AgencyClient, AgencyService, AgencyQuote, QuoteStatus, QuoteItem, AgencySettings } from '../../types';
+import { Search, Plus, Trash2, Download, FileText } from 'lucide-react';
+import { AgencyClient, AgencyService, AgencyQuote, QuoteStatus, QuoteItem, AgencySettings, TermTemplate } from '../../types';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
 import { Input } from '../ui/Input';
@@ -14,21 +14,34 @@ interface AgencyContextType {
   quotes: AgencyQuote[];
   setQuotes: (quotes: AgencyQuote[]) => void;
   settings: AgencySettings;
+  termTemplates: TermTemplate[];
+  handleUpdateQuote: (id: string, updatedQuote: AgencyQuote) => void;
 }
 
 export const QuotesModule: React.FC = () => {
-  const { clients, services, quotes, setQuotes, settings } = useOutletContext<AgencyContextType>();
+  const { clients, services, quotes, setQuotes, settings, termTemplates, handleUpdateQuote } = useOutletContext<AgencyContextType>();
 
   const [selectedClient, setSelectedClient] = useState<AgencyClient | null>(null);
   const [clientSearch, setClientSearch] = useState('');
+  const [serviceSearch, setServiceSearch] = useState('');
   const [items, setItems] = useState<QuoteItem[]>([]);
   const [status, setStatus] = useState<QuoteStatus>(QuoteStatus.DRAFT);
   const [terms, setTerms] = useState(DEFAULT_TERMS);
+  const [deliveryDate, setDeliveryDate] = useState('');
+  const [validUntil, setValidUntil] = useState(() => {
+    const date = new Date();
+    date.setDate(date.getDate() + 15);
+    return date.toISOString().split('T')[0];
+  });
 
   const total = items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
 
   const filteredClients = clients.filter(c => 
     c.name.toLowerCase().includes(clientSearch.toLowerCase()) || c.rut.includes(clientSearch)
+  );
+
+  const filteredServices = services.filter(s =>
+    s.name.toLowerCase().includes(serviceSearch.toLowerCase())
   );
 
   const handleAddItem = (service: AgencyService) => {
@@ -52,6 +65,32 @@ export const QuotesModule: React.FC = () => {
   };
 
   const handleDownloadPDF = () => {
+    if (!selectedClient) {
+      alert('Por favor, selecciona un cliente para guardar la cotización.');
+      return;
+    }
+    if (items.length === 0) {
+      alert('Por favor, agrega al menos un ítem a la cotización.');
+      return;
+    }
+
+    // 1. Crear y guardar la cotización en el historial
+    const newQuote: AgencyQuote = {
+      id: generateId(),
+      clientId: selectedClient.id,
+      clientName: selectedClient.name,
+      clientRut: selectedClient.rut,
+      date: new Date().toISOString(),
+      validUntil: validUntil,
+      deliveryDate: deliveryDate,
+      items: items,
+      total: total,
+      status: status,
+      terms: terms,
+    };
+    setQuotes([...quotes, newQuote]);
+
+    // 2. Descargar el PDF
     const element = document.getElementById('quote-preview');
     if (!element) return;
     
@@ -59,7 +98,7 @@ export const QuotesModule: React.FC = () => {
     if (window.html2pdf) {
       const opt = {
         margin: 0,
-        filename: `Cotizacion_${selectedClient?.name || 'Cliente'}_${new Date().toISOString().split('T')[0]}.pdf`,
+        filename: `Cotizacion_${newQuote.clientName}_${new Date(newQuote.date).toISOString().split('T')[0]}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { scale: 2 },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
@@ -71,11 +110,40 @@ export const QuotesModule: React.FC = () => {
     }
   };
 
+  const handleLoadQuote = (quoteToLoad: AgencyQuote) => {
+    const client = clients.find(c => c.id === quoteToLoad.clientId);
+
+    // Carga el cliente para la previsualización. Si el cliente original fue eliminado,
+    // crea un objeto de cliente temporal a partir de los datos de la cotización.
+    if (client) {
+      setSelectedClient(client);
+      setClientSearch(client.name);
+    } else {
+      setSelectedClient({ id: quoteToLoad.clientId, name: quoteToLoad.clientName, rut: quoteToLoad.clientRut, email: '', phone: '', city: '', giro: '', lastTotal: 0 });
+      setClientSearch(quoteToLoad.clientName);
+    }
+
+    setItems(quoteToLoad.items);
+    setStatus(quoteToLoad.status);
+    setTerms(quoteToLoad.terms);
+    setDeliveryDate(quoteToLoad.deliveryDate || '');
+    setValidUntil(quoteToLoad.validUntil || '');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleStatusChange = (quoteId: string, newStatus: QuoteStatus) => {
+    const quoteToUpdate = quotes.find(q => q.id === quoteId);
+    if (quoteToUpdate) {
+      handleUpdateQuote(quoteId, { ...quoteToUpdate, status: newStatus });
+    }
+  };
+
   return (
-    <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-140px)]">
+    <div className="space-y-12">
+      <div className="flex flex-col lg:flex-row gap-6 lg:items-start">
       {/* Sidebar Controls */}
-      <div className="w-full lg:w-1/3 flex flex-col gap-4 overflow-y-auto pr-2">
-        <Card className="flex flex-col gap-4">
+      <div className="w-full lg:w-1/3 flex flex-col gap-6 pr-2 lg:sticky lg:top-24">
+        <Card className="flex flex-col gap-6">
           <h3 className="font-bold text-lg">Configuración</h3>
           
           {/* Client Search */}
@@ -108,7 +176,7 @@ export const QuotesModule: React.FC = () => {
           <div>
             <label className="text-[10px] uppercase font-bold text-gray-500 mb-1 tracking-wider">Estado</label>
             <div className="flex gap-2">
-              {[QuoteStatus.DRAFT, QuoteStatus.SENT, QuoteStatus.APPROVED].map(s => (
+              {[QuoteStatus.DRAFT, QuoteStatus.SENT, QuoteStatus.APPROVED, QuoteStatus.REJECTED].map(s => (
                 <button
                   key={s}
                   onClick={() => setStatus(s)}
@@ -124,11 +192,27 @@ export const QuotesModule: React.FC = () => {
             </div>
           </div>
 
+          {/* Dates */}
+          <div className="grid grid-cols-2 gap-4">
+            <Input label="Fecha de Entrega" type="date" value={deliveryDate} onChange={e => setDeliveryDate(e.target.value)} />
+            <Input label="Vencimiento" type="date" value={validUntil} onChange={e => setValidUntil(e.target.value)} />
+          </div>
+
           {/* Services Quick Add */}
           <div>
             <label className="text-[10px] uppercase font-bold text-gray-500 mb-1 tracking-wider">Agregar Servicio</label>
+            <div className="relative mb-2">
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+              <input 
+                type="text"
+                placeholder="Buscar servicio..."
+                value={serviceSearch}
+                onChange={(e) => setServiceSearch(e.target.value)}
+                className="w-full pl-8 pr-2 py-1.5 bg-white border border-gray-200 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-liu/50"
+              />
+            </div>
             <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto p-1">
-              {services.map(s => (
+              {filteredServices.map(s => (
                 <button
                   key={s.id}
                   onClick={() => handleAddItem(s)}
@@ -140,15 +224,27 @@ export const QuotesModule: React.FC = () => {
             </div>
           </div>
 
-          <textarea 
-            className="w-full h-32 text-xs p-2 border border-gray-200 rounded bg-gray-50 resize-none focus:outline-none focus:border-liu"
-            value={terms}
-            onChange={(e) => setTerms(e.target.value)}
-            placeholder="Términos y condiciones..."
-          />
+          {/* Terms and Conditions */}
+          <div>
+            <label className="text-[10px] uppercase font-bold text-gray-500 mb-1 tracking-wider">Términos y Condiciones</label>
+            <div className="flex flex-wrap gap-2 mb-2">
+              {termTemplates.map(template => (
+                <Button key={template.id} variant="secondary" size="sm" className="text-xs flex-grow" onClick={() => setTerms(template.content)}>
+                  <FileText size={12} className="mr-1" />
+                  {template.name}
+                </Button>
+              ))}
+            </div>
+            <textarea 
+              className="w-full h-24 text-xs p-2 border border-gray-200 rounded bg-white resize-y focus:outline-none focus:border-liu"
+              value={terms}
+              onChange={(e) => setTerms(e.target.value)}
+              placeholder="Términos y condiciones..."
+            />
+          </div>
 
-          <Button onClick={handleDownloadPDF} icon={<Download size={18}/>} className="w-full">
-            Descargar PDF
+          <Button onClick={handleDownloadPDF} icon={<Download size={18}/>} className="w-full" disabled={!selectedClient || items.length === 0}>
+            Guardar y Descargar PDF
           </Button>
         </Card>
       </div>
@@ -160,10 +256,10 @@ export const QuotesModule: React.FC = () => {
           className="bg-white shadow-2xl w-[210mm] min-h-[297mm] p-[15mm] flex flex-col justify-between text-sm relative"
         >
           {/* Header */}
-          <div className="flex justify-between items-start mb-12">
+          <div className="flex justify-between items-start mb-8">
             <div>
-              <div className="w-16 h-16 bg-gray-100 rounded mb-2 overflow-hidden">
-                <img src={settings.logoUrl} alt="Logo" className="w-full h-full object-cover" />
+              <div className="w-40 h-16 rounded mb-2 overflow-hidden flex items-center justify-center">
+                <img src={settings.logoUrl} alt="Logo" className="max-w-full max-h-full object-contain" />
               </div>
               <h1 className="font-bold text-2xl text-black uppercase tracking-tight">{settings.companyName}</h1>
               <div className="text-gray-500 text-xs mt-1">
@@ -175,19 +271,42 @@ export const QuotesModule: React.FC = () => {
             <div className="text-right">
               <h2 className="text-4xl font-black text-gray-100 uppercase tracking-widest mb-2">Presupuesto</h2>
               <div className="text-xs space-y-1">
-                <p><span className="font-bold text-black">Fecha:</span> {new Date().toLocaleDateString()}</p>
-                <p><span className="font-bold text-black">Validez:</span> 15 días</p>
-                <div className="mt-4 p-3 bg-gray-50 rounded-lg text-left w-64 ml-auto border border-gray-100">
-                  <p className="text-[10px] uppercase text-gray-400 font-bold mb-1">Cliente</p>
-                  <p className="font-bold text-black text-base">{selectedClient?.name || 'Nombre Cliente'}</p>
-                  <p className="text-gray-500">{selectedClient?.rut || 'RUT'}</p>
-                  <p className="text-gray-500">{selectedClient?.city || 'Ciudad'}</p>
-                </div>
+                <p><span className="font-bold text-black">Fecha:</span> {new Date().toLocaleDateString('es-CL')}</p>
+                {validUntil && <p><span className="font-bold text-black">Validez:</span> {new Date(validUntil + 'T00:00:00').toLocaleDateString('es-CL')}</p>}
               </div>
             </div>
           </div>
 
-          {/* Items Table */}
+          {/* Client Info */}
+          <div className="mb-8 p-4 rounded-lg border bg-gray-50 border-gray-100">
+            <h3 className="text-sm font-bold text-gray-800 mb-3 uppercase tracking-wider">Cliente</h3>
+            <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm">
+              <div>
+                <p className="text-gray-500">Nombre / Razón Social:</p>
+                <p className="font-bold text-black">{selectedClient?.name || 'Nombre Cliente'}</p>
+              </div>
+              <div>
+                <p className="text-gray-500">RUT:</p>
+                <p className="font-bold text-black">{selectedClient?.rut || 'RUT'}</p>
+              </div>
+              <div>
+                <p className="text-gray-500">Giro:</p>
+                <p>{selectedClient?.giro || 'Sin giro'}</p>
+              </div>
+              <div>
+                <p className="text-gray-500">Ciudad:</p>
+                <p>{selectedClient?.city || 'Ciudad'}</p>
+              </div>
+              {deliveryDate && (
+                <div>
+                  <p className="text-gray-500">Fecha de Entrega:</p>
+                  <p className="font-bold text-black">{new Date(deliveryDate + 'T00:00:00').toLocaleDateString('es-CL')}</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Items Table */} 
           <div className="flex-grow">
             <table className="w-full mb-8">
               <thead className="border-b-2 border-black">
@@ -202,19 +321,21 @@ export const QuotesModule: React.FC = () => {
               <tbody className="divide-y divide-gray-100">
                 {items.map((item) => (
                   <tr key={item.id} className="group">
-                    <td className="py-4 pr-4">
+                    <td className="py-4 pr-4 align-top">
                       <Input 
                         theme="paper" 
                         value={item.name} 
                         onChange={(e) => updateItem(item.id, 'name', e.target.value)}
                         className="font-bold mb-1"
                       />
-                       <Input 
-                        theme="paper" 
-                        value={item.description} 
-                        onChange={(e) => updateItem(item.id, 'description', e.target.value)}
-                        className="text-xs text-gray-500 w-full"
-                      />
+                      <div className="flex items-start text-xs text-gray-500 w-full">
+                        <textarea
+                          value={item.description}
+                          onChange={(e) => updateItem(item.id, 'description', e.target.value)}
+                          className="flex-grow bg-transparent focus:bg-gray-50 focus:outline-none rounded p-1 resize-none"
+                          rows={item.description?.split('\n').length || 1}
+                        />
+                      </div>
                     </td>
                     <td className="py-4 text-center align-top pt-5">
                        <input 
@@ -272,10 +393,70 @@ export const QuotesModule: React.FC = () => {
           </div>
           
           {/* Watermark for visual effect */}
-          <div className="absolute inset-0 pointer-events-none flex items-center justify-center opacity-[0.02]">
-             <span className="text-[150px] font-black -rotate-45">{status}</span>
+          <div className={`absolute inset-0 pointer-events-none flex items-center justify-center ${
+            status === QuoteStatus.APPROVED ? 'opacity-[0.04] text-green-500' :
+            status === QuoteStatus.REJECTED ? 'opacity-[0.04] text-red-500' :
+            'opacity-[0.02] text-black' 
+          }`}>
+             <span className="text-[150px] font-black -rotate-45 uppercase">{status}</span>
           </div>
         </div>
+      </div>
+      </div>
+      {/* Quote History */}
+      <div className="w-full">
+        <h2 className="text-2xl font-bold text-liu-text mb-4">Historial de Cotizaciones</h2>
+        <Card noPadding>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left">
+              <thead className="bg-gray-100 text-gray-500 text-xs font-bold uppercase tracking-wider">
+                <tr>
+                  <th className="px-4 py-3">ID</th>
+                  <th className="px-4 py-3">Cliente</th>
+                  <th className="px-4 py-3">Fecha</th>
+                  <th className="px-4 py-3 text-right">Total</th>
+                  <th className="px-4 py-3 text-center">Estado</th>
+                  <th className="px-4 py-3"></th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {quotes.slice().reverse().map(q => (
+                  <tr key={q.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-3 font-mono text-xs text-liu">{q.id.substring(0, 8)}...</td>
+                    <td className="px-4 py-3 font-medium">{q.clientName}</td>
+                    <td className="px-4 py-3 text-gray-600">{new Date(q.date).toLocaleDateString('es-CL')}</td>
+                    <td className="px-4 py-3 text-right font-mono">{formatCurrency(q.total * 1.19)}</td>
+                    <td className="px-4 py-3 text-center">
+                        <select
+                          value={q.status}
+                          onChange={(e) => handleStatusChange(q.id, e.target.value as QuoteStatus)}
+                          className={`px-2 py-1 text-[10px] rounded-full font-bold border-transparent focus:ring-2 focus:ring-liu/50 appearance-none text-center cursor-pointer ${
+                            q.status === QuoteStatus.APPROVED ? 'bg-green-100 text-green-700' :
+                            q.status === QuoteStatus.REJECTED ? 'bg-red-100 text-red-700' :
+                            q.status === QuoteStatus.SENT ? 'bg-blue-100 text-blue-700' :
+                            'bg-gray-100 text-gray-600'
+                          }`}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {Object.values(QuoteStatus).map(s => (
+                            <option key={s} value={s} className="bg-white text-black">{s}</option>
+                          ))}
+                        </select>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <Button variant="ghost" size="sm" onClick={() => handleLoadQuote(q)}>Ver</Button>
+                    </td>
+                  </tr>
+                ))}
+                {quotes.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="text-center py-10 text-gray-500">No hay cotizaciones guardadas.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </Card>
       </div>
     </div>
   );

@@ -2,8 +2,8 @@ import { createBrowserRouter } from "react-router-dom";
 import App from "./App"; // Antes era "../App"
 import { AnalyticsModule } from "./components/modules/Analytics"; // Antes era "../components..."
 import { CostsModule } from "./components/modules/Costs";
-import { ServicesModule } from "./components/modules/Services";
-import { ClientsModule } from "./components/modules/Clients";
+import { ServicesModule } from "./components/modules/ServicesModule";
+import { ClientsModule } from "./components/modules/ClientsModule";
 import { QuotesModule } from "./components/modules/Quotes";
 
 export const router = createBrowserRouter(

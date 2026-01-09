@@ -3,17 +3,31 @@ import { useOutletContext } from 'react-router-dom'; // <--- IMPORTANTE
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
   LineChart, Line, ReferenceLine, Legend 
-} from 'recharts';
+} from 'recharts'; 
 import { Card } from '../ui/Card';
-import { AgencyCost, AgencyService, CostType, AgencySettings } from '../../types'; // Asegúrate de importar AgencySettings
+import { AgencyCost, AgencyService, CostType, AgencySettings, AgencyClient, AgencyQuote } from '../../types'; // Asegúrate de importar AgencySettings
 import { formatCurrency, calculateBEP } from '../../utils/formatters';
 import { MONTH_NAMES } from '../../constants';
 
 // Definimos qué datos vienen del Contexto (lo que envía App.tsx)
 interface AgencyContextType {
   costs: AgencyCost[];
+  setCosts: React.Dispatch<React.SetStateAction<AgencyCost[]>>;
   services: AgencyService[];
+  setServices: React.Dispatch<React.SetStateAction<AgencyService[]>>;
   settings: AgencySettings;
+  clients: AgencyClient[];
+  setClients: React.Dispatch<React.SetStateAction<AgencyClient[]>>;
+  quotes: AgencyQuote[];
+  setQuotes: React.Dispatch<React.SetStateAction<AgencyQuote[]>>;
+  handleUpdateSettings: (key: keyof AgencySettings, value: any) => void;
+  bepHourlyRate: number;
+  handleAddService: (newService: AgencyService) => void;
+  handleUpdateService: (id: string, updatedService: AgencyService) => void;
+  handleDeleteService: (id: string) => void;
+  handleAddClient: (newClient: AgencyClient) => void;
+  handleUpdateClient: (id: string, updatedClient: AgencyClient) => void;
+  handleDeleteClient: (id: string) => void;
 }
 
 export const AnalyticsModule: React.FC = () => {

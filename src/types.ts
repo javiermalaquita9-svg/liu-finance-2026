@@ -27,7 +27,14 @@ export interface AgencyClient {
   email: string;
   phone: string;
   city: string;
+  giro: string;
   lastTotal: number;
+}
+
+export interface TermTemplate {
+  id: string;
+  name: string;
+  content: string;
 }
 
 export interface QuoteItem {
@@ -43,6 +50,7 @@ export enum QuoteStatus {
   DRAFT = 'Borrador',
   SENT = 'Enviado',
   APPROVED = 'Aprobado',
+  REJECTED = 'Rechazado',
 }
 
 export interface AgencyQuote {
@@ -51,6 +59,8 @@ export interface AgencyQuote {
   clientName: string;
   clientRut: string;
   date: string;
+  validUntil: string;
+  deliveryDate: string;
   items: QuoteItem[];
   total: number;
   status: QuoteStatus;
