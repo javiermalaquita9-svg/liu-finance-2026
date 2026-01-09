@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { LayoutDashboard, Wallet, Users, FileText, Settings, Briefcase, Building2, X } from 'lucide-react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { 
-  AgencyCost, AgencyService, AgencyClient, AgencyQuote, AgencySettings, TabView, TermTemplate
+  AgencyCost, AgencyService, AgencyClient, AgencyQuote, AgencySettings, TabView, TermTemplate, AgencyAsset
 } from './types';
 import { DEFAULT_SETTINGS, DEFAULT_TERMS } from './constants';
 import { calculateBEP } from './utils/formatters';
@@ -45,6 +45,11 @@ const App: React.FC = () => {
     return saved ? JSON.parse(saved) : [];
   });
 
+  const [assets, setAssets] = useState<AgencyAsset[]>(() => {
+    const saved = localStorage.getItem('liu_assets');
+    return saved ? JSON.parse(saved) : [];
+  });
+
   const [termTemplates, setTermTemplates] = useState<TermTemplate[]>(() => {
     const saved = localStorage.getItem('liu_term_templates');
     return saved ? JSON.parse(saved) : [
@@ -60,6 +65,7 @@ const App: React.FC = () => {
   useEffect(() => localStorage.setItem('liu_services', JSON.stringify(services)), [services]);
   useEffect(() => localStorage.setItem('liu_clients', JSON.stringify(clients)), [clients]);
   useEffect(() => localStorage.setItem('liu_quotes', JSON.stringify(quotes)), [quotes]);
+  useEffect(() => localStorage.setItem('liu_assets', JSON.stringify(assets)), [assets]);
   useEffect(() => localStorage.setItem('liu_term_templates', JSON.stringify(termTemplates)), [termTemplates]);
 
   // Derived Calculations
@@ -163,7 +169,7 @@ const App: React.FC = () => {
         {/* react-router-dom renderizará el componente de la página correcta aquí */}
         <Outlet
           context={{
-            costs, setCosts, services, setServices, clients, setClients, quotes, setQuotes, settings, handleUpdateSettings, bepHourlyRate,
+            costs, setCosts, services, setServices, clients, setClients, quotes, setQuotes, settings, handleUpdateSettings, bepHourlyRate, assets, setAssets,
             handleAddService, handleUpdateService, handleDeleteService,
             handleAddClient, handleUpdateClient, handleDeleteClient, handleUpdateQuote,
             termTemplates, setTermTemplates

@@ -131,7 +131,6 @@ export const CostsModule: React.FC = () => {
         <Button onClick={handleAddCost} icon={<Plus size={18}/>}>Agregar</Button>
         <div className="h-8 w-[1px] bg-gray-200 mx-2 hidden md:block"></div>
         <Button variant="secondary" icon={<Upload size={18}/>}>Importar</Button>
-        <Button variant="secondary" icon={<Calculator size={18}/>}>Activos</Button>
       </div>
 
       {/* Table */}

@@ -27,7 +27,7 @@ export interface AgencyClient {
   email: string;
   phone: string;
   city: string;
-  giro: string;
+  giro?: string;
   lastTotal: number;
 }
 
@@ -77,3 +77,13 @@ export interface AgencySettings {
 }
 
 export type TabView = 'finances' | 'services' | 'analytics' | 'clients' | 'quotes';
+
+export interface AgencyAsset {
+  id: string;
+  name: string;
+  purchaseDate: string; // Formato YYYY-MM-DD
+  initialValue: number;
+  usefulLife: number; // en años
+  // Opcional: podrías agregar un valor residual si lo necesitas
+  // residualValue: number;
+}
