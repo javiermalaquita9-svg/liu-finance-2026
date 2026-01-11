@@ -5,9 +5,10 @@ import {
   LineChart, Line, ReferenceLine, Legend 
 } from 'recharts'; 
 import { Card } from '../ui/Card';
-import { AgencyCost, AgencyService, CostType, AgencySettings, AgencyClient, AgencyQuote } from '../../types'; // Asegúrate de importar AgencySettings
+import { AgencyCost, AgencyService, CostType, AgencySettings, AgencyClient, AgencyQuote, MonthlySale } from '../../types'; // Asegúrate de importar AgencySettings
 import { formatCurrency, calculateBEP } from '../../utils/formatters';
 import { MONTH_NAMES } from '../../constants';
+import { Input } from '../ui/Input';
 
 // Definimos qué datos vienen del Contexto (lo que envía App.tsx)
 interface AgencyContextType {
@@ -20,6 +21,8 @@ interface AgencyContextType {
   setClients: React.Dispatch<React.SetStateAction<AgencyClient[]>>;
   quotes: AgencyQuote[];
   setQuotes: React.Dispatch<React.SetStateAction<AgencyQuote[]>>;
+  monthlySales: MonthlySale[];
+  setMonthlySales: React.Dispatch<React.SetStateAction<MonthlySale[]>>;
   handleUpdateSettings: (key: keyof AgencySettings, value: any) => void;
   bepHourlyRate: number;
   handleAddService: (newService: AgencyService) => void;
@@ -28,32 +31,53 @@ interface AgencyContextType {
   handleAddClient: (newClient: AgencyClient) => void;
   handleUpdateClient: (id: string, updatedClient: AgencyClient) => void;
   handleDeleteClient: (id: string) => void;
+  handleUpdateQuote: (id: string, updatedQuote: AgencyQuote) => void;
+  handleDeleteQuote: (id: string) => void;
 }
 
 export const AnalyticsModule: React.FC = () => {
   // 1. Aquí "pescamos" los datos del contexto en lugar de recibirlos por props
-  const { costs, services, settings } = useOutletContext<AgencyContextType>();
+  const { costs, services, settings, monthlySales, setMonthlySales } = useOutletContext<AgencyContextType>();
   
   // Mapeamos la capacidad desde settings
   const capacity = settings.capacityHours; 
+  const currentYear = new Date().getFullYear();
 
   const totalFixed = costs.filter(c => c.type === CostType.FIXED).reduce((acc, c) => acc + c.amount, 0);
   const totalVariable = costs.filter(c => c.type === CostType.VARIABLE).reduce((acc, c) => acc + c.amount, 0);
   const totalMonthlyCost = totalFixed + totalVariable;
 
-  // Mock Projection Data (Cash Flow)
+  // --- Lógica para el Flujo de Caja ---
+  // Ahora se basa en los datos reales ingresados por el usuario
   const cashFlowData = MONTH_NAMES.map((month, index) => {
-    const growthFactor = 1 + (index * 0.05);
-    const seasonality = index === 11 || index === 5 ? 1.2 : 1;
-    const estimatedSales = (totalMonthlyCost * 1.3) * growthFactor * seasonality;
+    const monthSale = monthlySales.find(s => s.year === currentYear && s.month === index);
+    const ingresos = monthSale ? monthSale.sales : 0;
     
     return {
       name: month,
-      Ingresos: Math.round(estimatedSales),
+      Ingresos: ingresos,
       Egresos: totalMonthlyCost,
-      Utilidad: Math.round(estimatedSales - totalMonthlyCost)
+      Utilidad: ingresos - totalMonthlyCost,
     };
   });
+
+  const handleSalesChange = (monthIndex: number, salesValue: string) => {
+    const sales = parseFloat(salesValue) || 0;
+    
+    setMonthlySales(prevSales => {
+      const existingSaleIndex = prevSales.findIndex(s => s.year === currentYear && s.month === monthIndex);
+      
+      if (existingSaleIndex > -1) {
+        // Actualizar venta existente
+        const updatedSales = [...prevSales];
+        updatedSales[existingSaleIndex] = { ...updatedSales[existingSaleIndex], sales };
+        return updatedSales;
+      } else {
+        // Agregar nueva venta
+        return [...prevSales, { year: currentYear, month: monthIndex, sales }];
+      }
+    });
+  };
 
   // BEP Chart Data
   const avgServicePricePerHour = services.length > 0 
@@ -76,6 +100,30 @@ export const AnalyticsModule: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Card para Ingresar Ventas Mensuales */}
+      <Card>
+        <h3 className="text-lg font-bold mb-4 text-liu-text">Registro de Ventas Mensuales ({currentYear})</h3>
+        <p className="text-sm text-gray-500 mb-6">
+          Ingresa los ingresos (ventas) de cada mes para que los gráficos reflejen la realidad de tu negocio. 
+          Los meses sin datos se mostrarán con $0 en ingresos.
+        </p>
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+          {MONTH_NAMES.map((month, index) => {
+            const sale = monthlySales.find(s => s.year === currentYear && s.month === index);
+            return (
+              <Input
+                key={month}
+                label={month}
+                type="number"
+                placeholder="Ventas del mes"
+                value={sale?.sales || ''}
+                onChange={(e) => handleSalesChange(index, e.target.value)}
+                className="text-right"
+              />
+            );
+          })}
+        </div>
+      </Card>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Cash Flow Chart */}
         <Card className="h-96">

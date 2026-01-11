@@ -17,9 +17,9 @@ export const AssetsModule: React.FC = () => {
 
   // Estado para el formulario de nuevo activo
   const [name, setName] = useState('');
-  const [initialValue, setInitialValue] = useState(0);
+  const [initialValue, setInitialValue] = useState<number | ''>('');
   const [purchaseDate, setPurchaseDate] = useState(new Date().toISOString().split('T')[0]);
-  const [usefulLife, setUsefulLife] = useState(3);
+  const [usefulLife, setUsefulLife] = useState<number | ''>(3);
 
   /**
    * Calcula el valor actual de un activo usando depreciación lineal.
@@ -49,7 +49,7 @@ export const AssetsModule: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || initialValue <= 0 || usefulLife <= 0) {
+    if (!name || initialValue === '' || initialValue <= 0 || usefulLife === '' || usefulLife <= 0) {
       alert('Por favor, completa todos los campos correctamente.');
       return;
     }
@@ -66,7 +66,7 @@ export const AssetsModule: React.FC = () => {
 
     // Limpiar formulario
     setName('');
-    setInitialValue(0);
+    setInitialValue('');
     setPurchaseDate(new Date().toISOString().split('T')[0]);
     setUsefulLife(3);
   };
@@ -88,7 +88,7 @@ export const AssetsModule: React.FC = () => {
             label="Valor Inicial"
             type="number"
             value={initialValue}
-            onChange={(e) => setInitialValue(parseFloat(e.target.value))}
+            onChange={(e) => setInitialValue(e.target.value === '' ? '' : parseFloat(e.target.value))}
           />
           <Input
             label="Fecha de Compra"
@@ -100,7 +100,7 @@ export const AssetsModule: React.FC = () => {
             label="Vida Útil (años)"
             type="number"
             value={usefulLife}
-            onChange={(e) => setUsefulLife(parseInt(e.target.value))}
+            onChange={(e) => setUsefulLife(e.target.value === '' ? '' : parseInt(e.target.value, 10))}
           />
           <Button type="submit" className="w-full">Agregar Activo</Button>
         </form>
@@ -122,7 +122,7 @@ export const AssetsModule: React.FC = () => {
             <tbody className="divide-y divide-gray-100">
               {assets.map(asset => {
                 const currentValue = calculateCurrentValue(asset);
-                const annualDepreciation = asset.initialValue / asset.usefulLife;
+                const annualDepreciation = asset.usefulLife > 0 ? asset.initialValue / asset.usefulLife : 0;
                 return (
                   <tr key={asset.id}>
                     <td className="px-4 py-3 font-medium">{asset.name}</td>

@@ -87,3 +87,9 @@ export interface AgencyAsset {
   // Opcional: podrías agregar un valor residual si lo necesitas
   // residualValue: number;
 }
+
+export interface MonthlySale {
+  year: number;
+  month: number; // 0 para Enero, 11 para Diciembre
+  sales: number;
+}

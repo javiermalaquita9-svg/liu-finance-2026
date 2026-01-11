@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { LayoutDashboard, Wallet, Users, FileText, Settings, Briefcase, Building2, X } from 'lucide-react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { 
-  AgencyCost, AgencyService, AgencyClient, AgencyQuote, AgencySettings, TabView, TermTemplate, AgencyAsset
+  AgencyCost, AgencyService, AgencyClient, AgencyQuote, AgencySettings, TabView, TermTemplate, AgencyAsset, CostType, MonthlySale
 } from './types';
 import { DEFAULT_SETTINGS, DEFAULT_TERMS } from './constants';
 import { calculateBEP } from './utils/formatters';
@@ -59,6 +59,11 @@ const App: React.FC = () => {
     ];
   });
 
+  const [monthlySales, setMonthlySales] = useState<MonthlySale[]>(() => {
+    const saved = localStorage.getItem('liu_monthly_sales');
+    return saved ? JSON.parse(saved) : [];
+  });
+
   // Effects for Persistence
   useEffect(() => localStorage.setItem('liu_settings', JSON.stringify(settings)), [settings]);
   useEffect(() => localStorage.setItem('liu_costs', JSON.stringify(costs)), [costs]);
@@ -67,9 +72,34 @@ const App: React.FC = () => {
   useEffect(() => localStorage.setItem('liu_quotes', JSON.stringify(quotes)), [quotes]);
   useEffect(() => localStorage.setItem('liu_assets', JSON.stringify(assets)), [assets]);
   useEffect(() => localStorage.setItem('liu_term_templates', JSON.stringify(termTemplates)), [termTemplates]);
+  useEffect(() => localStorage.setItem('liu_monthly_sales', JSON.stringify(monthlySales)), [monthlySales]);
 
   // Derived Calculations
-  const totalFixedCosts = costs.filter(c => c.type === 'Fijo').reduce((acc, c) => acc + c.amount, 0);
+
+  // 1. Calcular la depreciación mensual total de todos los activos.
+  const totalMonthlyDepreciation = assets.reduce((acc, asset) => {
+    // Asegurarse de que la vida útil sea mayor a cero para evitar división por cero.
+    if (asset.usefulLife > 0) {
+      // La depreciación se calcula anualmente y luego se divide por 12 para obtener el costo mensual.
+      const annualDepreciation = asset.initialValue / asset.usefulLife;
+      return acc + (annualDepreciation / 12);
+    }
+    return acc;
+  }, 0);
+
+  // 2. Crear un "costo fijo virtual" para la depreciación.
+  // Esto permite que todos los demás módulos (Análisis, Costos) lo incluyan automáticamente.
+  const depreciationCost: AgencyCost | null = totalMonthlyDepreciation > 0 ? {
+    id: 'depreciation-virtual-cost', // ID especial para identificarlo y tratarlo como solo lectura
+    name: 'Depreciación de Activos',
+    amount: totalMonthlyDepreciation,
+    category: 'Depreciación', // Añadimos la propiedad 'category'
+    type: CostType.FIXED,
+  } : null;
+
+  // 3. Agregar la depreciación a la lista de costos y calcular el total de costos fijos.
+  const costsWithDepreciation = depreciationCost ? [...costs, depreciationCost] : costs;
+  const totalFixedCosts = costsWithDepreciation.filter(c => c.type === CostType.FIXED).reduce((acc, c) => acc + c.amount, 0);
   const bepHourlyRate = calculateBEP(totalFixedCosts, settings.capacityHours);
 
   const navigation = [
@@ -112,6 +142,10 @@ const App: React.FC = () => {
 
   const handleDeleteClient = (id: string) => {
     setClients((prev) => prev.filter((client) => client.id !== id));
+  };
+
+  const handleDeleteQuote = (id: string) => {
+    setQuotes((prev) => prev.filter((quote) => quote.id !== id));
   };
 
   const handleUpdateQuote = (id: string, updatedQuote: AgencyQuote) => {
@@ -168,10 +202,11 @@ const App: React.FC = () => {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* react-router-dom renderizará el componente de la página correcta aquí */}
         <Outlet
-          context={{
-            costs, setCosts, services, setServices, clients, setClients, quotes, setQuotes, settings, handleUpdateSettings, bepHourlyRate, assets, setAssets,
+          context={{ // Pasamos la lista de costos que ya incluye la depreciación
+            costs: costsWithDepreciation, monthlySales, setMonthlySales,
+            setCosts, services, setServices, clients, setClients, quotes, setQuotes, settings, handleUpdateSettings, bepHourlyRate, assets, setAssets,
             handleAddService, handleUpdateService, handleDeleteService,
-            handleAddClient, handleUpdateClient, handleDeleteClient, handleUpdateQuote,
+            handleAddClient, handleUpdateClient, handleDeleteClient, handleUpdateQuote, handleDeleteQuote,
             termTemplates, setTermTemplates
           }}
         />

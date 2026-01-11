@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useOutletContext } from 'react-router-dom'; // <--- IMPORTANTE
-import { Search, Plus, Trash2, Download, FileText } from 'lucide-react';
+import { useOutletContext, Link } from 'react-router-dom'; // <--- IMPORTANTE
+import { Search, Plus, Trash2, Download, FileText, Edit } from 'lucide-react';
 import { AgencyClient, AgencyService, AgencyQuote, QuoteStatus, QuoteItem, AgencySettings, TermTemplate } from '../../types';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
@@ -16,10 +16,11 @@ interface AgencyContextType {
   settings: AgencySettings;
   termTemplates: TermTemplate[];
   handleUpdateQuote: (id: string, updatedQuote: AgencyQuote) => void;
+  handleDeleteQuote: (id: string) => void;
 }
 
 export const QuotesModule: React.FC = () => {
-  const { clients, services, quotes, setQuotes, settings, termTemplates, handleUpdateQuote } = useOutletContext<AgencyContextType>();
+  const { clients, services, quotes, setQuotes, settings, termTemplates, handleUpdateQuote, handleDeleteQuote } = useOutletContext<AgencyContextType>();
 
   const [selectedClient, setSelectedClient] = useState<AgencyClient | null>(null);
   const [clientSearch, setClientSearch] = useState('');
@@ -33,6 +34,11 @@ export const QuotesModule: React.FC = () => {
     date.setDate(date.getDate() + 15);
     return date.toISOString().split('T')[0];
   });
+
+  // Estado para los filtros del historial
+  const [statusFilter, setStatusFilter] = useState<QuoteStatus | 'Todos'>('Todos');
+  const [startDateFilter, setStartDateFilter] = useState('');
+  const [endDateFilter, setEndDateFilter] = useState('');
 
   const total = items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
 
@@ -137,6 +143,32 @@ export const QuotesModule: React.FC = () => {
       handleUpdateQuote(quoteId, { ...quoteToUpdate, status: newStatus });
     }
   };
+
+  // Lógica de filtrado para el historial
+  const filteredQuotes = quotes.filter(q => {
+    // Filtro por estado
+    if (statusFilter !== 'Todos' && q.status !== statusFilter) {
+      return false;
+    }
+
+    // Filtro por rango de fechas
+    const quoteDate = new Date(q.date);
+    if (startDateFilter) {
+      if (quoteDate < new Date(startDateFilter)) {
+        return false;
+      }
+    }
+    if (endDateFilter) {
+      const endDate = new Date(endDateFilter);
+      endDate.setDate(endDate.getDate() + 1); // Incluir el día completo
+      if (quoteDate >= endDate) {
+        return false;
+      }
+    }
+    return true;
+  });
+
+  const totalFilteredSum = filteredQuotes.reduce((acc, q) => acc + (q.total * 1.19), 0);
 
   return (
     <div className="space-y-12">
@@ -406,23 +438,60 @@ export const QuotesModule: React.FC = () => {
       {/* Quote History */}
       <div className="w-full">
         <h2 className="text-2xl font-bold text-liu-text mb-4">Historial de Cotizaciones</h2>
+        
+        {/* Filtros del Historial */}
+        <Card className="mb-6">
+          <div className="flex flex-col md:flex-row gap-4 items-end">
+            <div className="flex-grow">
+              <label className="text-[10px] uppercase font-bold text-gray-500 mb-1 tracking-wider">Filtrar por Estado</label>
+              <div className="flex flex-wrap gap-1 bg-gray-100 p-1 rounded-lg">
+                {(['Todos', ...Object.values(QuoteStatus)]).map(s => (
+                  <button
+                    key={s}
+                    onClick={() => setStatusFilter(s as QuoteStatus | 'Todos')}
+                    className={`px-3 py-1.5 text-xs rounded-md font-medium transition-colors flex-1 md:flex-none ${
+                      statusFilter === s
+                        ? 'bg-white shadow-sm text-liu-text'
+                        : 'text-gray-500 hover:bg-gray-200'
+                    }`}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <Input
+              label="Desde"
+              type="date"
+              value={startDateFilter}
+              onChange={e => setStartDateFilter(e.target.value)}
+              className="w-full md:w-40"
+            />
+            <Input
+              label="Hasta"
+              type="date"
+              value={endDateFilter}
+              onChange={e => setEndDateFilter(e.target.value)}
+              className="w-full md:w-40"
+            />
+          </div>
+        </Card>
+
         <Card noPadding>
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left">
               <thead className="bg-gray-100 text-gray-500 text-xs font-bold uppercase tracking-wider">
                 <tr>
-                  <th className="px-4 py-3">ID</th>
                   <th className="px-4 py-3">Cliente</th>
                   <th className="px-4 py-3">Fecha</th>
                   <th className="px-4 py-3 text-right">Total</th>
                   <th className="px-4 py-3 text-center">Estado</th>
-                  <th className="px-4 py-3"></th>
+                  <th className="px-4 py-3 text-right">Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {quotes.slice().reverse().map(q => (
+                {filteredQuotes.slice().reverse().map(q => (
                   <tr key={q.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 font-mono text-xs text-liu">{q.id.substring(0, 8)}...</td>
                     <td className="px-4 py-3 font-medium">{q.clientName}</td>
                     <td className="px-4 py-3 text-gray-600">{new Date(q.date).toLocaleDateString('es-CL')}</td>
                     <td className="px-4 py-3 text-right font-mono">{formatCurrency(q.total * 1.19)}</td>
@@ -444,16 +513,42 @@ export const QuotesModule: React.FC = () => {
                         </select>
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <Button variant="ghost" size="sm" onClick={() => handleLoadQuote(q)}>Ver</Button>
+                      <div className="flex items-center justify-end space-x-1">
+                        <Button variant="ghost" size="sm" onClick={() => handleLoadQuote(q)}>Cargar</Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => {
+                            if (window.confirm(`¿Estás seguro de que quieres eliminar la cotización para ${q.clientName}?`)) {
+                              handleDeleteQuote(q.id);
+                            }
+                          }}
+                          className="w-9 p-0 text-red-500 hover:bg-red-100 hover:text-red-700"
+                          aria-label="Eliminar"
+                        >
+                          <Trash2 size={16} />
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))}
-                {quotes.length === 0 && (
+                {filteredQuotes.length === 0 && (
                   <tr>
                     <td colSpan={6} className="text-center py-10 text-gray-500">No hay cotizaciones guardadas.</td>
                   </tr>
                 )}
               </tbody>
+              {filteredQuotes.length > 0 && (
+                <tfoot className="bg-gray-50 border-t-2 border-gray-200">
+                  <tr>
+                    <td colSpan={2} className="px-4 py-4 text-right font-bold text-liu-text uppercase tracking-wider">Total Filtrado</td>
+                    <td className="px-4 py-4 text-right font-bold font-mono text-liu-text text-base">
+                      {formatCurrency(totalFilteredSum)}
+                    </td>
+                    <td colSpan={2}></td>
+                  </tr>
+                </tfoot>
+              )}
             </table>
           </div>
         </Card>
