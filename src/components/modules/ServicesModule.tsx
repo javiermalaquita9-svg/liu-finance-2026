@@ -5,7 +5,7 @@ import { AgencyService, AgencyClient, AgencyCost, AgencyQuote, AgencySettings } 
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
-import { Trash2, Edit, PlusCircle } from 'lucide-react';
+import { Trash2, Edit, PlusCircle, Copy } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters';
 
 // This should ideally be in a shared types file
@@ -38,6 +38,15 @@ export const ServicesModule: React.FC = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [currentService, setCurrentService] = useState<AgencyService | null>(null);
 
+  const handleDuplicateService = (serviceToDuplicate: AgencyService) => {
+    const newService: AgencyService = {
+      ...serviceToDuplicate,
+      id: uuidv4(),
+      name: `${serviceToDuplicate.name} (Copia)`,
+    };
+    handleAddService(newService);
+  };
+
   const handleStartEdit = (service: AgencyService) => {
     setEditingId(service.id);
     setCurrentService(JSON.parse(JSON.stringify(service))); // Deep copy to avoid mutation issues
@@ -60,11 +69,31 @@ export const ServicesModule: React.FC = () => {
     const { name, value } = e.target;
     const isNumeric = ['hours', 'price', 'margin'].includes(name);
     const val = isNumeric ? parseFloat(value) || 0 : value;
+    
+    const updateState = (prevState: any) => {
+      const updated = { ...prevState, [name]: val };
+      const cost = calculateCost(updated.hours);
 
+      if (name === 'hours' || name === 'margin') {
+        if (cost > 0 && updated.margin < 100) {
+          updated.price = Math.round(cost / (1 - (updated.margin / 100)));
+        } else {
+          updated.price = Math.round(cost);
+        }
+      } else if (name === 'price') {
+        if (cost > 0 && updated.price > cost) {
+          updated.margin = Math.round(((updated.price - cost) / updated.price) * 100);
+        } else {
+          updated.margin = 0;
+        }
+      }
+      return updated;
+    };
+    
     if (editingId && currentService) {
-      setCurrentService({ ...currentService, [name]: val });
+      setCurrentService(updateState(currentService));
     } else {
-      setNewService({ ...newService, [name]: val });
+      setNewService(updateState(newService));
     }
   };
 
@@ -97,7 +126,7 @@ export const ServicesModule: React.FC = () => {
               <Input label="Nombre del Servicio" name="name" value={serviceData.name} onChange={handleInputChange} />
               <Input label="Horas Estimadas" name="hours" type="number" value={serviceData.hours} onChange={handleInputChange} />
               <div className="md:col-span-2">
-                <label htmlFor="edit-description" className="block text-xs font-medium text-gray-700 mb-1">Detalles del Servicio (Viñetas)</label>
+                <label htmlFor="edit-description" className="block text-xs font-medium text-gray-700 mb-1">Detalles del Servicio</label>
                 <textarea
                   id="edit-description"
                   name="description"
@@ -107,7 +136,7 @@ export const ServicesModule: React.FC = () => {
                   rows={4}
                 />
               </div>
-              <Input label="Precio Final (Venta)" name="price" type="number" value={serviceData.price} onChange={handleInputChange} />
+              <Input label="Precio Cliente" name="price" type="number" value={serviceData.price} onChange={handleInputChange} />
               <Input label="Margen (%)" name="margin" type="number" value={serviceData.margin} onChange={handleInputChange} />
             </div>
             <div className="flex justify-end gap-2 mt-4">
@@ -128,15 +157,18 @@ export const ServicesModule: React.FC = () => {
               <p className="text-sm text-gray-500">{service.hours} horas</p>
             </div>
             <div className="flex flex-col items-end">
-              <div className="flex items-center gap-2">
-                <Button variant="ghost" size="sm" className="w-9 p-0" onClick={() => handleStartEdit(service)}>
+              <div className="flex items-center gap-1">
+                <Button variant="ghost" size="sm" className="w-8 p-0 text-blue-600 hover:bg-blue-100" onClick={() => handleDuplicateService(service)} title="Duplicar Servicio">
+                  <Copy className="h-4 w-4" />
+                </Button>
+                <Button variant="ghost" size="sm" className="w-8 p-0" onClick={() => handleStartEdit(service)} title="Editar Servicio">
                   <Edit className="h-4 w-4" />
                 </Button>
-                <Button variant="ghost" size="sm" className="w-9 p-0" onClick={() => {
+                <Button variant="ghost" size="sm" className="w-8 p-0" onClick={() => {
                   if (window.confirm(`¿Estás seguro de que quieres eliminar el servicio "${service.name}"?`)) {
                     handleDeleteService(service.id);
                   }
-                }}>
+                }} title="Eliminar Servicio">
                   <Trash2 className="h-4 w-4 text-red-500" />
                 </Button>
               </div>
@@ -157,11 +189,11 @@ export const ServicesModule: React.FC = () => {
           )}
           <div className="mt-auto pt-4 grid grid-cols-2 gap-4 text-center border-t">
             <div>
-              <p className="text-xs text-gray-400">Costo</p>
+              <p className="text-xs text-gray-400">Costo Producción</p>
               <p className="font-bold">{formatCurrency(cost)}</p>
             </div>
             <div>
-              <p className="text-xs text-gray-400">Venta</p>
+              <p className="text-xs text-gray-400">Precio Cliente</p>
               <p className="font-bold text-liu">{formatCurrency(service.price)}</p>
             </div>
           </div>
@@ -189,7 +221,7 @@ export const ServicesModule: React.FC = () => {
                 <Input label="Nombre del Servicio" name="name" value={newService.name} onChange={handleInputChange} placeholder="Ej: Diseño de Landing Page" />
                 <Input label="Horas Estimadas" name="hours" type="number" value={newService.hours} onChange={handleInputChange} />
                 <div className="md:col-span-2">
-                  <label htmlFor="add-description" className="block text-xs font-medium text-gray-700 mb-1">Detalles del Servicio (Viñetas)</label>
+                  <label htmlFor="add-description" className="block text-xs font-medium text-gray-700 mb-1">Detalles del Servicio</label>
                   <textarea
                     id="add-description"
                     name="description"
@@ -200,7 +232,7 @@ export const ServicesModule: React.FC = () => {
                     rows={4}
                   />
                 </div>
-                <Input label="Precio Final (Venta)" name="price" type="number" value={newService.price} onChange={handleInputChange} />
+                <Input label="Precio Cliente" name="price" type="number" value={newService.price} onChange={handleInputChange} />
                 <Input label="Margen (%)" name="margin" type="number" value={newService.margin} onChange={handleInputChange} />
               </div>
               <div className="flex justify-end gap-2 mt-4">
