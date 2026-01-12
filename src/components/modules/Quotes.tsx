@@ -106,7 +106,7 @@ export const QuotesModule: React.FC = () => {
         margin: 0,
         filename: `Cotizacion_${newQuote.clientName}_${new Date(newQuote.date).toISOString().split('T')[0]}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2 },
+        html2canvas: { scale: 2, useCORS: true, scrollY: 0 },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
       };
       // @ts-ignore
