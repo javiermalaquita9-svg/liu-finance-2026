@@ -310,9 +310,9 @@ export const QuotesModule: React.FC = () => {
           </div>
 
           {/* Client Info */}
-          <div className="mb-8 p-4 rounded-lg border bg-gray-50 border-gray-100">
-            <h3 className="text-sm font-bold text-gray-800 mb-3 uppercase tracking-wider">Cliente</h3>
-            <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm">
+          <div className="mb-6 p-3 rounded-lg border bg-gray-50 border-gray-100">
+            <h3 className="text-sm font-bold text-gray-800 mb-2 uppercase tracking-wider">Cliente</h3>
+            <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-sm">
               <div>
                 <p className="text-gray-500">Nombre / Razón Social:</p>
                 <p className="font-bold text-black">{selectedClient?.name || 'Nombre Cliente'}</p>
@@ -353,7 +353,7 @@ export const QuotesModule: React.FC = () => {
               <tbody className="divide-y divide-gray-100">
                 {items.map((item) => (
                   <tr key={item.id} className="group">
-                    <td className="py-4 pr-4 align-top">
+                    <td className="py-2 pr-4 align-top">
                       <Input 
                         theme="paper" 
                         value={item.name} 
@@ -368,7 +368,7 @@ export const QuotesModule: React.FC = () => {
                         dangerouslySetInnerHTML={{ __html: item.description || '' }}
                       />
                     </td>
-                    <td className="py-4 text-center align-top pt-5">
+                    <td className="py-2 text-center align-top">
                        <input 
                         type="number"
                         min="1"
@@ -377,13 +377,13 @@ export const QuotesModule: React.FC = () => {
                         onChange={(e) => updateItem(item.id, 'quantity', parseInt(e.target.value))}
                       />
                     </td>
-                    <td className="py-4 text-right align-top pt-5 font-mono text-gray-600">
+                    <td className="py-2 text-right align-top font-mono text-gray-600">
                       {formatCurrency(item.price)}
                     </td>
-                    <td className="py-4 text-right align-top pt-5 font-bold font-mono">
+                    <td className="py-2 text-right align-top font-bold font-mono">
                       {formatCurrency(item.price * item.quantity)}
                     </td>
-                    <td className="py-4 text-center align-top pt-5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <td className="py-2 text-center align-top opacity-0 group-hover:opacity-100 transition-opacity">
                       <button onClick={() => removeItem(item.id)} className="text-red-400 hover:text-red-600">
                         <Trash2 size={14} />
                       </button>
