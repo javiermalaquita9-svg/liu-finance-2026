@@ -360,14 +360,13 @@ export const QuotesModule: React.FC = () => {
                         onChange={(e) => updateItem(item.id, 'name', e.target.value)}
                         className="font-bold mb-1"
                       />
-                      <div className="flex items-start text-xs text-gray-500 w-full">
-                        <textarea
-                          value={item.description}
-                          onChange={(e) => updateItem(item.id, 'description', e.target.value)}
-                          className="flex-grow bg-transparent focus:bg-gray-50 focus:outline-none rounded p-1 resize-none"
-                          rows={item.description?.split('\n').length || 1}
-                        />
-                      </div>
+                      <div
+                        contentEditable
+                        suppressContentEditableWarning
+                        onBlur={e => updateItem(item.id, 'description', e.currentTarget.innerText)}
+                        className="flex-grow bg-transparent focus:bg-gray-50 focus:outline-none rounded p-1 whitespace-pre-wrap text-xs text-gray-500 w-full min-h-[20px]"
+                        dangerouslySetInnerHTML={{ __html: item.description || '' }}
+                      />
                     </td>
                     <td className="py-4 text-center align-top pt-5">
                        <input 
