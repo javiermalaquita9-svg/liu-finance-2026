@@ -26,6 +26,19 @@ export const AssetsModule: React.FC = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [currentAsset, setCurrentAsset] = useState<AgencyAsset | null>(null);
 
+  // Calculamos los totales de depreciación
+  const totals = assets.reduce(
+    (acc, asset) => {
+      if (asset.usefulLife > 0) {
+        const annualDep = asset.initialValue / asset.usefulLife;
+        acc.annual += annualDep;
+        acc.monthly += annualDep / 12;
+      }
+      return acc;
+    },
+    { annual: 0, monthly: 0 }
+  );
+
   /**
    * Calcula el valor actual de un activo usando depreciación lineal.
    * Asume un valor residual de 0.
@@ -129,6 +142,7 @@ export const AssetsModule: React.FC = () => {
           <Input
             label="Valor Inicial"
             type="number"
+            step="any"
             value={initialValue}
             onChange={(e) => setInitialValue(e.target.value === '' ? '' : parseFloat(e.target.value))}
           />
@@ -141,8 +155,9 @@ export const AssetsModule: React.FC = () => {
           <Input
             label="Vida Útil (años)"
             type="number"
+            step="any"
             value={usefulLife}
-            onChange={(e) => setUsefulLife(e.target.value === '' ? '' : parseInt(e.target.value, 10))}
+            onChange={(e) => setUsefulLife(e.target.value === '' ? '' : parseFloat(e.target.value))}
           />
           <Button type="submit" className="w-full">Agregar Activo</Button>
         </form>
@@ -158,7 +173,8 @@ export const AssetsModule: React.FC = () => {
                 <th className="px-4 py-3">Fecha Compra</th>
                 <th className="px-4 py-3 text-center">Vida Útil (años)</th>
                 <th className="px-4 py-3 text-right">Valor Inicial</th>
-                <th className="px-4 py-3 text-right">Depreciación Anual</th>
+                <th className="px-4 py-3 text-right">Dep. Anual</th>
+                <th className="px-4 py-3 text-right">Dep. Mensual</th>
                 <th className="px-4 py-3 text-right font-bold text-liu-text">Valor Actual</th>
                 <th className="px-4 py-3 text-right">Acciones</th>
               </tr>
@@ -172,9 +188,10 @@ export const AssetsModule: React.FC = () => {
                     <tr key={asset.id} className="bg-yellow-50">
                       <td className="px-2 py-2"><Input name="name" value={currentAsset.name} onChange={handleEditInputChange} /></td>
                       <td className="px-2 py-2"><Input name="purchaseDate" type="date" value={currentAsset.purchaseDate} onChange={handleEditInputChange} /></td>
-                      <td className="px-2 py-2 text-center"><Input name="usefulLife" type="number" value={currentAsset.usefulLife} onChange={handleEditInputChange} className="w-20 text-center" /></td>
-                      <td className="px-2 py-2"><Input name="initialValue" type="number" value={currentAsset.initialValue} onChange={handleEditInputChange} className="text-right" /></td>
+                      <td className="px-2 py-2 text-center"><Input name="usefulLife" type="number" step="any" value={currentAsset.usefulLife} onChange={handleEditInputChange} className="w-20 text-center" /></td>
+                      <td className="px-2 py-2"><Input name="initialValue" type="number" step="any" value={currentAsset.initialValue} onChange={handleEditInputChange} className="text-right" /></td>
                       <td className="px-4 py-3 text-right font-mono text-red-500">-{formatCurrency(annualDepreciation)}</td>
+                      <td className="px-4 py-3 text-right font-mono text-red-500">-{formatCurrency(annualDepreciation / 12)}</td>
                       <td className="px-4 py-3 text-right font-mono font-bold">{formatCurrency(currentValue)}</td>
                       <td className="px-4 py-3 text-right">
                         <div className="flex items-center justify-end gap-2">
@@ -195,6 +212,7 @@ export const AssetsModule: React.FC = () => {
                     <td className="px-4 py-3 text-center">{asset.usefulLife}</td>
                     <td className="px-4 py-3 text-right font-mono">{formatCurrency(asset.initialValue)}</td>
                     <td className="px-4 py-3 text-right font-mono text-red-500">-{formatCurrency(annualDepreciation)}</td>
+                    <td className="px-4 py-3 text-right font-mono text-red-500">-{formatCurrency(annualDepreciation / 12)}</td>
                     <td className="px-4 py-3 text-right font-mono font-bold">{formatCurrency(currentValue)}</td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end gap-1">
@@ -216,9 +234,19 @@ export const AssetsModule: React.FC = () => {
                 );
               })}
               {assets.length === 0 && (
-                <tr><td colSpan={7} className="text-center py-10 text-gray-500">No hay activos registrados.</td></tr>
+                <tr><td colSpan={8} className="text-center py-10 text-gray-500">No hay activos registrados.</td></tr>
               )}
             </tbody>
+            {assets.length > 0 && (
+              <tfoot className="bg-gray-50 border-t-2 border-gray-200">
+                <tr>
+                  <td colSpan={4} className="px-4 py-4 text-right font-bold text-gray-700 uppercase text-xs">Total Depreciación:</td>
+                  <td className="px-4 py-4 text-right font-mono font-bold text-red-500">-{formatCurrency(totals.annual)}</td>
+                  <td className="px-4 py-4 text-right font-mono font-bold text-red-500">-{formatCurrency(totals.monthly)}</td>
+                  <td colSpan={2}></td>
+                </tr>
+              </tfoot>
+            )}
           </table>
         </div>
       </Card>

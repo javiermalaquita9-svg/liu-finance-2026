@@ -108,23 +108,53 @@ const CostStructure = ({ costs, settings, onSettingChange, estimatedIncome, onEs
   const [quickCost, setQuickCost] = useState({ name: '', amount: '', type: 'Fijo', category: 'Operativo' });
 
   // Cálculos de KPIs
-  const totalCosts = useMemo(() => costs.reduce((acc, cost) => acc + cost.amount, 0), [costs]);
-  const totalFixedCosts = useMemo(() => costs.filter(c => c.type === 'Fijo').reduce((acc, cost) => acc + cost.amount, 0), [costs]);
-  const bepHourValue = useMemo(() => (settings.capacityHours > 0 ? totalFixedCosts / settings.capacityHours : 0), [totalFixedCosts, settings.capacityHours]);
+  const totalFixedCosts = useMemo(() => costs.filter(c => c.type === 'Fijo' && !c.isAsset).reduce((acc, cost) => acc + cost.amount, 0), [costs]);
+  const totalVariableCosts = useMemo(() => costs.filter(c => c.type === 'Variable').reduce((acc, cost) => acc + cost.amount, 0), [costs]);
+  const totalDepreciation = useMemo(() => costs.filter(c => c.isAsset).reduce((acc, cost) => acc + cost.amount, 0), [costs]);
+  const totalCosts = totalFixedCosts + totalVariableCosts + totalDepreciation;
+  
+  const bepHourValue = useMemo(() => (settings.capacityHours > 0 ? (totalFixedCosts + totalDepreciation) / settings.capacityHours : 0), [totalFixedCosts, totalDepreciation, settings.capacityHours]);
   const cashFlowResult = estimatedIncome - totalCosts;
 
   const categories = ['Administrativo', 'Operativo', 'Tecnología', 'RRHH', 'Ventas'];
 
   return (
     <div className="p-6 space-y-6">
-      {/* 1. Panel Superior de Métricas */}
+      {/* 1. Panel Superior de Métricas - Estructura de Costos */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="p-4 border-l-4 border-[#7F54F5]">
-          <h3 className="text-xs font-bold uppercase text-gray-500">Costos Mensuales</h3>
+        <Card className="p-4 border-l-4 border-gray-800">
+          <h3 className="text-xs font-bold uppercase text-gray-500">Costos Totales</h3>
           <p className="text-2xl font-black">{formatCurrency(totalCosts)}</p>
-          <p className="text-[10px] text-gray-400 mt-1 font-bold">FIJOS: {formatCurrency(totalFixedCosts)}</p>
+          <p className="text-[10px] text-gray-400 mt-1 font-bold uppercase">100% de la estructura</p>
         </Card>
         
+        <Card className="p-4 border-l-4 border-[#7F54F5]">
+          <h3 className="text-xs font-bold uppercase text-gray-500">Costos Fijos</h3>
+          <p className="text-2xl font-black">{formatCurrency(totalFixedCosts)}</p>
+          <p className="text-[10px] text-gray-400 mt-1 font-bold uppercase">
+            {totalCosts > 0 ? ((totalFixedCosts / totalCosts) * 100).toFixed(1) : 0}% del total
+          </p>
+        </Card>
+
+        <Card className="p-4 border-l-4 border-[#FD8000]">
+          <h3 className="text-xs font-bold uppercase text-gray-500">Costos Variables</h3>
+          <p className="text-2xl font-black">{formatCurrency(totalVariableCosts)}</p>
+          <p className="text-[10px] text-gray-400 mt-1 font-bold uppercase">
+            {totalCosts > 0 ? ((totalVariableCosts / totalCosts) * 100).toFixed(1) : 0}% del total
+          </p>
+        </Card>
+
+        <Card className="p-4 border-l-4 border-blue-500">
+          <h3 className="text-xs font-bold uppercase text-gray-500">Depreciación</h3>
+          <p className="text-2xl font-black">{formatCurrency(totalDepreciation)}</p>
+          <p className="text-[10px] text-gray-400 mt-1 font-bold uppercase">
+            {totalCosts > 0 ? ((totalDepreciation / totalCosts) * 100).toFixed(1) : 0}% del total
+          </p>
+        </Card>
+      </div>
+
+      {/* 1.1 Panel Secundario: Rentabilidad y B.E.P. */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="p-4 border-l-4 border-[#FFCC00]">
           <h3 className="text-xs font-bold uppercase text-gray-500">Capacidad (Horas)</h3>
           <input 
@@ -368,7 +398,7 @@ const ServicesManager = ({ services, handleAddService, handleDeleteService, bepH
             </div>
             <div className="mb-4">
               <h3 className="text-lg font-bold text-[#111111] pr-16">{service.name}</h3>
-              <p className="text-sm text-[#6B7280] mt-2 line-clamp-2">{service.description || 'Sin descripción.'}</p>
+              <p className="text-sm text-[#6B7280] mt-2 whitespace-pre-wrap">{service.description || 'Sin descripción.'}</p>
             </div>
             <div className="grid grid-cols-2 gap-4 mb-6">
               <div>
@@ -405,10 +435,11 @@ const ServicesManager = ({ services, handleAddService, handleDeleteService, bepH
               onChange={e => setNewService({ ...newService, name: e.target.value })}
             />
             <div className="w-full">
-              <label className="block text-[10px] font-bold uppercase text-gray-500 mb-1">Descripción Corta</label>
+              <label className="block text-[10px] font-bold uppercase text-gray-500 mb-1">Descripción / Entregables</label>
               <textarea
                 className="w-full p-2 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#FFCC00] focus:border-[#FFCC00] focus:outline-none"
-                rows="2"
+                rows="5"
+                placeholder="Ej:&#10;- Análisis de cuenta&#10;- 4 Posts semanales&#10;- Reporte mensual"
                 value={newService.description}
                 onChange={e => setNewService({ ...newService, description: e.target.value })}
               />
@@ -1426,8 +1457,9 @@ function App() {
 
   // --- Derived State ---
   const bepHourValue = useMemo(() => {
-    const fixedCosts = costs.filter(c => c.type === 'Fijo').reduce((acc, cost) => acc + cost.amount, 0);
-    return settings.capacityHours > 0 ? fixedCosts / settings.capacityHours : 0;
+    const fixedCosts = costs.filter(c => c.type === 'Fijo' && !c.isAsset).reduce((acc, cost) => acc + cost.amount, 0);
+    const depreciation = costs.filter(c => c.isAsset).reduce((acc, cost) => acc + cost.amount, 0);
+    return settings.capacityHours > 0 ? (fixedCosts + depreciation) / settings.capacityHours : 0;
   }, [costs, settings.capacityHours]);
 
   // --- UI State ---
@@ -1445,7 +1477,7 @@ function App() {
   }, [isSettingsOpen, settings]);
 
   const componentProps = {
-    Finanzas: { costs, settings, onSettingChange: (key, value) => handleUpdateSettings({...settings, [key]: value}), estimatedIncome, onEstimatedIncomeChange: handleUpdateEstimatedIncome, handleAddQuickCost, handleDeleteCost, handleImportTSV, handleAddAsset, costsLoading: dataLoading.costs },
+    'Estructura Costos': {},
     Servicios: { services, handleAddService, handleDeleteService, bepHourValue, servicesLoading: dataLoading.services },
     Clientes: { clients, handleAddClient, handleDeleteClient, quotes, setActiveTab, onNewQuoteForClient: setPreloadedClient, clientsLoading: dataLoading.clients },
     Cotizador: { quotes, handleSaveQuote, handleDeleteQuote, handleUpdateQuote, clients, handleAddClient, handleUpdateClient, services, settings, preloadedClient, setPreloadedClient, quotesLoading: dataLoading.quotes },

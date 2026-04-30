@@ -99,9 +99,13 @@ export const QuotesModule: React.FC = () => {
     // 2. Descargar el PDF
     const element = document.getElementById('quote-preview');
     if (!element) return;
-    
+
     // @ts-ignore
     if (window.html2pdf) {
+      // Ocultar elementos interactivos que no deben aparecer en el PDF
+      const pdfHideEls = element.querySelectorAll('[data-pdf-hide]');
+      pdfHideEls.forEach(el => ((el as HTMLElement).style.display = 'none'));
+
       const opt = {
         margin: 0,
         filename: `Cotizacion_${newQuote.clientName}_${new Date(newQuote.date).toISOString().split('T')[0]}.pdf`,
@@ -110,7 +114,10 @@ export const QuotesModule: React.FC = () => {
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
       };
       // @ts-ignore
-      window.html2pdf().set(opt).from(element).save();
+      window.html2pdf().set(opt).from(element).save().then(() => {
+        // Restaurar visibilidad tras generar el PDF
+        pdfHideEls.forEach(el => ((el as HTMLElement).style.display = ''));
+      });
     } else {
       alert("La librería PDF aún está cargando. Intente en unos segundos.");
     }
@@ -175,109 +182,110 @@ export const QuotesModule: React.FC = () => {
       <div className="flex flex-col lg:flex-row gap-6 lg:items-start">
       {/* Sidebar Controls */}
       <div className="w-full lg:w-1/3 flex flex-col gap-6 pr-2 lg:sticky lg:top-24">
-        <Card className="flex flex-col gap-6">
-          <h3 className="font-bold text-lg">Configuración</h3>
-          
+        <Card className="p-0 overflow-hidden divide-y divide-gray-100">
+          <div className="px-5 py-4">
+            <h3 className="font-bold text-base text-liu-text">Configuración</h3>
+          </div>
+
           {/* Client Search */}
-          <div className="relative">
-            <Input 
-              label="Cliente" 
-              placeholder="Buscar cliente..." 
+          <div className="px-5 py-4 relative">
+            <label className="text-[10px] uppercase font-bold text-gray-400 tracking-wider mb-1.5 block">Cliente</label>
+            <input
+              placeholder="Buscar cliente..."
               value={clientSearch}
               onChange={(e) => setClientSearch(e.target.value)}
-              onFocus={() => setSelectedClient(null)} // Reset on search to show list
+              onFocus={() => setSelectedClient(null)}
+              className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm text-liu-text focus:outline-none focus:ring-2 focus:ring-liu/50 focus:border-liu focus:bg-white transition-colors"
             />
+            {selectedClient && (
+              <div className="mt-1.5 flex items-center gap-2 text-xs text-gray-500">
+                <span className="w-2 h-2 rounded-full bg-green-400 inline-block"></span>
+                {selectedClient.rut}
+              </div>
+            )}
             {clientSearch && !selectedClient && (
-              <div className="absolute top-full left-0 w-full bg-white border border-gray-200 rounded-lg shadow-lg z-10 mt-1 max-h-48 overflow-y-auto">
+              <div className="absolute left-5 right-5 top-full bg-white border border-gray-200 rounded-lg shadow-lg z-10 mt-1 max-h-44 overflow-y-auto">
                 {filteredClients.map(c => (
-                  <div 
-                    key={c.id} 
-                    className="p-3 hover:bg-gray-50 cursor-pointer text-sm"
+                  <div
+                    key={c.id}
+                    className="px-3 py-2.5 hover:bg-gray-50 cursor-pointer"
                     onClick={() => { setSelectedClient(c); setClientSearch(c.name); }}
                   >
-                    <div className="font-bold">{c.name}</div>
+                    <div className="font-bold text-sm">{c.name}</div>
                     <div className="text-gray-400 text-xs">{c.rut}</div>
                   </div>
                 ))}
-                {filteredClients.length === 0 && <div className="p-3 text-gray-400 text-sm">No encontrado</div>}
+                {filteredClients.length === 0 && <div className="px-3 py-2.5 text-gray-400 text-sm">No encontrado</div>}
               </div>
             )}
           </div>
 
-          {/* Status */}
-          <div>
-            <label className="text-[10px] uppercase font-bold text-gray-500 mb-1 tracking-wider">Estado</label>
-            <div className="flex gap-2">
-              {[QuoteStatus.DRAFT, QuoteStatus.SENT, QuoteStatus.APPROVED, QuoteStatus.REJECTED].map(s => (
-                <button
-                  key={s}
-                  onClick={() => setStatus(s)}
-                  className={`flex-1 py-2 text-xs rounded-lg font-medium border transition-colors ${
-                    status === s 
-                      ? 'bg-liu border-liu text-black' 
-                      : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50'
-                  }`}
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
-          </div>
-
           {/* Dates */}
-          <div className="grid grid-cols-2 gap-4">
-            <Input label="Fecha de Entrega" type="date" value={deliveryDate} onChange={e => setDeliveryDate(e.target.value)} />
-            <Input label="Vencimiento" type="date" value={validUntil} onChange={e => setValidUntil(e.target.value)} />
+          <div className="px-5 py-4 grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-[10px] uppercase font-bold text-gray-400 tracking-wider mb-1.5 block">Entrega</label>
+              <input type="date" value={deliveryDate} onChange={e => setDeliveryDate(e.target.value)}
+                className="w-full bg-gray-50 border border-gray-200 rounded-lg px-2 py-2 text-xs text-liu-text focus:outline-none focus:ring-2 focus:ring-liu/50 focus:bg-white transition-colors" />
+            </div>
+            <div>
+              <label className="text-[10px] uppercase font-bold text-gray-400 tracking-wider mb-1.5 block">Vencimiento</label>
+              <input type="date" value={validUntil} onChange={e => setValidUntil(e.target.value)}
+                className="w-full bg-gray-50 border border-gray-200 rounded-lg px-2 py-2 text-xs text-liu-text focus:outline-none focus:ring-2 focus:ring-liu/50 focus:bg-white transition-colors" />
+            </div>
           </div>
 
           {/* Services Quick Add */}
-          <div>
-            <label className="text-[10px] uppercase font-bold text-gray-500 mb-1 tracking-wider">Agregar Servicio</label>
+          <div className="px-5 py-4">
+            <label className="text-[10px] uppercase font-bold text-gray-400 tracking-wider mb-2 block">Agregar Servicio</label>
             <div className="relative mb-2">
-              <Search className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-              <input 
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-300" size={14} />
+              <input
                 type="text"
-                placeholder="Buscar servicio..."
+                placeholder="Buscar..."
                 value={serviceSearch}
                 onChange={(e) => setServiceSearch(e.target.value)}
-                className="w-full pl-8 pr-2 py-1.5 bg-white border border-gray-200 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-liu/50"
+                className="w-full pl-8 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-liu/50 focus:bg-white transition-colors"
               />
             </div>
-            <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto p-1">
+            <div className="flex flex-col gap-1 max-h-36 overflow-y-auto">
               {filteredServices.map(s => (
                 <button
                   key={s.id}
                   onClick={() => handleAddItem(s)}
-                  className="text-xs bg-gray-50 border border-gray-200 px-2 py-1.5 rounded hover:bg-gray-100 flex items-center gap-1"
+                  className="flex items-center gap-2 text-xs text-left px-3 py-2 rounded-lg bg-gray-50 hover:bg-gray-100 border border-transparent hover:border-gray-200 transition-colors"
                 >
-                  <Plus size={12} /> {s.name}
+                  <Plus size={12} className="text-gray-400 shrink-0" />
+                  <span className="font-medium text-gray-700">{s.name}</span>
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Terms and Conditions */}
-          <div>
-            <label className="text-[10px] uppercase font-bold text-gray-500 mb-1 tracking-wider">Términos y Condiciones</label>
-            <div className="flex flex-wrap gap-2 mb-2">
+          {/* Terms */}
+          <div className="px-5 py-4">
+            <label className="text-[10px] uppercase font-bold text-gray-400 tracking-wider mb-2 block">Términos y Condiciones</label>
+            <div className="flex flex-wrap gap-1.5 mb-2">
               {termTemplates.map(template => (
-                <Button key={template.id} variant="secondary" size="sm" className="text-xs flex-grow" onClick={() => setTerms(template.content)}>
-                  <FileText size={12} className="mr-1" />
+                <button key={template.id} onClick={() => setTerms(template.content)}
+                  className="flex items-center gap-1 text-[10px] px-2 py-1 rounded border border-gray-200 bg-gray-50 hover:bg-gray-100 font-medium text-gray-600 transition-colors">
+                  <FileText size={10} />
                   {template.name}
-                </Button>
+                </button>
               ))}
             </div>
-            <textarea 
-              className="w-full h-24 text-xs p-2 border border-gray-200 rounded bg-white resize-y focus:outline-none focus:border-liu"
+            <textarea
+              className="w-full h-20 text-xs p-2.5 border border-gray-200 rounded-lg bg-gray-50 resize-none focus:outline-none focus:ring-2 focus:ring-liu/50 focus:bg-white transition-colors"
               value={terms}
               onChange={(e) => setTerms(e.target.value)}
               placeholder="Términos y condiciones..."
             />
           </div>
 
-          <Button onClick={handleDownloadPDF} icon={<Download size={18}/>} className="w-full" disabled={!selectedClient || items.length === 0}>
-            Guardar y Descargar PDF
-          </Button>
+          <div className="px-5 py-4">
+            <Button onClick={handleDownloadPDF} icon={<Download size={16}/>} className="w-full" disabled={!selectedClient || items.length === 0}>
+              Guardar y Descargar PDF
+            </Button>
+          </div>
         </Card>
       </div>
 
@@ -347,7 +355,7 @@ export const QuotesModule: React.FC = () => {
                   <th className="text-center py-2 font-black uppercase text-xs w-20">Cant</th>
                   <th className="text-right py-2 font-black uppercase text-xs w-32">Precio U.</th>
                   <th className="text-right py-2 font-black uppercase text-xs w-32">Total</th>
-                  <th className="w-8"></th>
+                  <th data-pdf-hide className="w-8"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -383,7 +391,7 @@ export const QuotesModule: React.FC = () => {
                     <td className="py-2 text-right align-top font-bold font-mono">
                       {formatCurrency(item.price * item.quantity)}
                     </td>
-                    <td className="py-2 text-center align-top opacity-0 group-hover:opacity-100 transition-opacity">
+                    <td data-pdf-hide className="py-2 text-center align-top opacity-0 group-hover:opacity-100 transition-opacity">
                       <button onClick={() => removeItem(item.id)} className="text-red-400 hover:text-red-600">
                         <Trash2 size={14} />
                       </button>

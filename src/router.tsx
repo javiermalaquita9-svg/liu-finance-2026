@@ -2,9 +2,10 @@ import { createBrowserRouter } from "react-router-dom";
 import App from "./App"; // Antes era "../App"
 import { AnalyticsModule } from "./components/modules/Analytics"; // Antes era "../components..."
 import { FinancesPage } from "./FinancesPage";
-import { ServicesModule } from "./components/modules/ServicesModule";
-import { ClientsModule } from "./components/modules/ClientsModule";
+import { ServicesModule } from "./components/modules/Services";
+import { ClientsModule } from "./components/modules/Clients";
 import { QuotesModule } from "./components/modules/Quotes";
+import { SimulatorModule } from "./Simulator";
 
 export const router = createBrowserRouter(
   [
@@ -20,6 +21,7 @@ export const router = createBrowserRouter(
         { path: "services", element: <ServicesModule /> },
         { path: "clients", element: <ClientsModule /> },
         { path: "quotes", element: <QuotesModule /> },
+        { path: "simulator", element: <SimulatorModule /> },
       ],
     },
   ],

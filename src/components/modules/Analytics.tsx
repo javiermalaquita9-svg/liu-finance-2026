@@ -102,24 +102,45 @@ export const AnalyticsModule: React.FC = () => {
     <div className="space-y-6">
       {/* Card para Ingresar Ventas Mensuales */}
       <Card>
-        <h3 className="text-lg font-bold mb-4 text-liu-text">Registro de Ventas Mensuales ({currentYear})</h3>
-        <p className="text-sm text-gray-500 mb-6">
-          Ingresa los ingresos (ventas) de cada mes para que los gráficos reflejen la realidad de tu negocio. 
-          Los meses sin datos se mostrarán con $0 en ingresos.
-        </p>
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+        <div className="flex justify-between items-center mb-5">
+          <h3 className="text-lg font-bold text-liu-text">Registro de Ventas ({currentYear})</h3>
+          <div className="text-sm text-right">
+            <span className="text-gray-400 text-xs uppercase font-bold tracking-wider">Total Anual</span>
+            <p className="font-black text-liu-text">{formatCurrency(cashFlowData.reduce((a, b) => a + b.Ingresos, 0))}</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
           {MONTH_NAMES.map((month, index) => {
             const sale = monthlySales.find(s => s.year === currentYear && s.month === index);
+            const isCurrentMonth = index === new Date().getMonth();
+            const hasValue = sale && sale.sales > 0;
             return (
-              <Input
+              <div
                 key={month}
-                label={month}
-                type="number"
-                placeholder="Ventas del mes"
-                value={sale?.sales || ''}
-                onChange={(e) => handleSalesChange(index, e.target.value)}
-                className="text-right"
-              />
+                className={`rounded-lg border p-3 transition-colors ${
+                  isCurrentMonth
+                    ? 'border-liu bg-yellow-50'
+                    : 'border-gray-100 bg-gray-50 hover:border-gray-200'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className={`text-[10px] font-bold uppercase tracking-wider ${isCurrentMonth ? 'text-liu-text' : 'text-gray-400'}`}>
+                    {month}
+                  </span>
+                  {isCurrentMonth && (
+                    <span className="text-[8px] bg-liu text-black px-1 py-0.5 rounded font-black leading-none">HOY</span>
+                  )}
+                </div>
+                <input
+                  type="number"
+                  placeholder="0"
+                  value={sale?.sales || ''}
+                  onChange={(e) => handleSalesChange(index, e.target.value)}
+                  className={`w-full bg-transparent border-none outline-none text-right font-bold text-sm ${
+                    hasValue ? 'text-liu-text' : 'text-gray-300 placeholder-gray-200'
+                  } focus:text-liu-text`}
+                />
+              </div>
             );
           })}
         </div>

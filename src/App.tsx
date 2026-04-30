@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { LayoutDashboard, Wallet, Users, FileText, Settings, Briefcase, Building2, X } from 'lucide-react';
+import { LayoutDashboard, Wallet, Users, FileText, Settings, Briefcase, Building2, X, Calculator } from 'lucide-react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { 
   AgencyCost, AgencyService, AgencyClient, AgencyQuote, AgencySettings, TabView, TermTemplate, AgencyAsset, CostType, MonthlySale
@@ -108,6 +108,7 @@ const App: React.FC = () => {
     { to: '/services', label: 'Servicios', icon: <Briefcase size={18} /> },
     { to: '/clients', label: 'Clientes', icon: <Users size={18} /> },
     { to: '/quotes', label: 'Cotizador', icon: <FileText size={18} /> },
+    { to: '/simulator', label: 'Simulador', icon: <Calculator size={18} /> },
   ];
 
   const handleUpdateSettings = (key: keyof AgencySettings, value: any) => {
