@@ -101,12 +101,12 @@ export const AnalyticsModule: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Card para Ingresar Ventas Mensuales */}
-      <Card>
+      <Card className="bg-[#1C1C1C] border-[#7F54F5]/20 text-gray-100">
         <div className="flex justify-between items-center mb-5">
-          <h3 className="text-lg font-bold text-liu-text">Registro de Ventas ({currentYear})</h3>
+          <h3 className="text-lg font-bold text-[#FFCC00]">Registro de Ventas ({currentYear})</h3>
           <div className="text-sm text-right">
             <span className="text-gray-400 text-xs uppercase font-bold tracking-wider">Total Anual</span>
-            <p className="font-black text-liu-text">{formatCurrency(cashFlowData.reduce((a, b) => a + b.Ingresos, 0))}</p>
+            <p className="font-black text-[#FFCC00]">{formatCurrency(cashFlowData.reduce((a, b) => a + b.Ingresos, 0))}</p>
           </div>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
@@ -119,16 +119,16 @@ export const AnalyticsModule: React.FC = () => {
                 key={month}
                 className={`rounded-lg border p-3 transition-colors ${
                   isCurrentMonth
-                    ? 'border-liu bg-yellow-50'
-                    : 'border-gray-100 bg-gray-50 hover:border-gray-200'
+                    ? 'border-[#FFCC00] bg-[#FFCC00]/10'
+                    : 'border-[#7F54F5]/20 bg-[#111111] hover:border-[#FD8000]/50'
                 }`}
               >
                 <div className="flex items-center justify-between mb-2">
-                  <span className={`text-[10px] font-bold uppercase tracking-wider ${isCurrentMonth ? 'text-liu-text' : 'text-gray-400'}`}>
+                  <span className={`text-[10px] font-bold uppercase tracking-wider ${isCurrentMonth ? 'text-[#FFCC00]' : 'text-gray-400'}`}>
                     {month}
                   </span>
                   {isCurrentMonth && (
-                    <span className="text-[8px] bg-liu text-black px-1 py-0.5 rounded font-black leading-none">HOY</span>
+                    <span className="text-[8px] bg-[#FFCC00] text-[#111111] px-1 py-0.5 rounded font-black leading-none">HOY</span>
                   )}
                 </div>
                 <input
@@ -137,8 +137,8 @@ export const AnalyticsModule: React.FC = () => {
                   value={sale?.sales || ''}
                   onChange={(e) => handleSalesChange(index, e.target.value)}
                   className={`w-full bg-transparent border-none outline-none text-right font-bold text-sm ${
-                    hasValue ? 'text-liu-text' : 'text-gray-300 placeholder-gray-200'
-                  } focus:text-liu-text`}
+                    hasValue ? 'text-[#FFCC00]' : 'text-gray-500 placeholder-gray-600'
+                  } focus:text-[#FFCC00]`}
                 />
               </div>
             );
@@ -147,33 +147,33 @@ export const AnalyticsModule: React.FC = () => {
       </Card>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Cash Flow Chart */}
-        <Card className="h-96">
-          <h3 className="text-lg font-bold mb-6 text-liu-text">Flujo de Caja Proyectado</h3>
+        <Card className="h-96 bg-[#1C1C1C] border-[#7F54F5]/20 text-gray-100">
+          <h3 className="text-lg font-bold mb-6 text-[#FFCC00]">Flujo de Caja Proyectado</h3>
           <ResponsiveContainer width="100%" height="85%">
             <BarChart data={cashFlowData}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eee" />
-              <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
-              <YAxis fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `$${val/1000}k`} />
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#7F54F5" strokeOpacity={0.2} />
+              <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} stroke="#ccc" />
+              <YAxis fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `$${val/1000}k`} stroke="#ccc" />
               <Tooltip 
-                formatter={(value: number) => formatCurrency(value)}
-                contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                formatter={(value: any) => formatCurrency(Number(value) || 0)}
+                contentStyle={{ borderRadius: '8px', border: 'none', backgroundColor: '#111111', color: '#fff', boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }}
               />
               <Legend />
               <Bar dataKey="Ingresos" fill="#FFCC00" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="Egresos" fill="#111111" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="Egresos" fill="#FD8000" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </Card>
 
         {/* BEP Chart */}
-        <Card className="h-96">
-          <h3 className="text-lg font-bold mb-6 text-liu-text">Punto de Equilibrio (Break-Even)</h3>
+        <Card className="h-96 bg-[#1C1C1C] border-[#7F54F5]/20 text-gray-100">
+          <h3 className="text-lg font-bold mb-6 text-[#FFCC00]">Punto de Equilibrio (Break-Even)</h3>
           <ResponsiveContainer width="100%" height="85%">
             <LineChart data={bepPoints}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eee" />
-              <XAxis dataKey="hours" fontSize={12} label={{ value: 'Horas Vendidas', position: 'insideBottom', offset: -5 }} />
-              <YAxis fontSize={12} tickFormatter={(val) => `$${val/1000}k`} />
-              <Tooltip formatter={(value: number) => formatCurrency(value)} />
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#7F54F5" strokeOpacity={0.2} />
+              <XAxis dataKey="hours" fontSize={12} stroke="#ccc" label={{ value: 'Horas Vendidas', position: 'insideBottom', offset: -5, fill: '#ccc' }} />
+              <YAxis fontSize={12} stroke="#ccc" tickFormatter={(val) => `$${val/1000}k`} />
+              <Tooltip formatter={(value: any) => formatCurrency(Number(value) || 0)} contentStyle={{ backgroundColor: '#111111', border: 'none', color: '#fff' }} />
               <Legend />
               <Line type="monotone" dataKey="Ventas" stroke="#FFCC00" strokeWidth={3} dot={false} />
               <Line type="monotone" dataKey="Costos" stroke="#FD8000" strokeWidth={3} dot={false} />
@@ -184,39 +184,39 @@ export const AnalyticsModule: React.FC = () => {
       </div>
 
       {/* Matrix Table */}
-      <Card noPadding>
+      <Card noPadding className="bg-[#1C1C1C] border-[#7F54F5]/20 text-gray-100 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-center">
-            <thead className="bg-gray-100 text-gray-500 text-xs font-bold uppercase tracking-wider">
+            <thead className="bg-[#111111] text-gray-300 text-xs font-bold uppercase tracking-wider border-b border-[#7F54F5]/20">
               <tr>
                 <th className="px-4 py-3 text-left">Concepto</th>
                 {MONTH_NAMES.map(m => <th key={m} className="px-2 py-3">{m}</th>)}
-                <th className="px-4 py-3 bg-yellow-50 text-liu-text">Total</th>
+                <th className="px-4 py-3 bg-[#FFCC00]/10 text-[#FFCC00]">Total</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-[#7F54F5]/20">
               <tr>
                 <td className="px-4 py-3 text-left font-bold">Ingresos</td>
                 {cashFlowData.map((d, i) => (
-                  <td key={i} className="px-2 py-3 text-gray-600">{formatCurrency(d.Ingresos).replace('$', '')}</td>
+                  <td key={i} className="px-2 py-3 text-gray-300">{formatCurrency(d.Ingresos).replace('$', '')}</td>
                 ))}
-                <td className="px-4 py-3 font-bold bg-yellow-50">{formatCurrency(cashFlowData.reduce((a,b)=>a+b.Ingresos,0))}</td>
+                <td className="px-4 py-3 font-bold bg-[#FFCC00]/10 text-[#FFCC00]">{formatCurrency(cashFlowData.reduce((a,b)=>a+b.Ingresos,0))}</td>
               </tr>
               <tr>
                 <td className="px-4 py-3 text-left font-bold text-red-500">Egresos</td>
                 {cashFlowData.map((d, i) => (
-                  <td key={i} className="px-2 py-3 text-gray-600">{formatCurrency(d.Egresos).replace('$', '')}</td>
+                  <td key={i} className="px-2 py-3 text-gray-300">{formatCurrency(d.Egresos).replace('$', '')}</td>
                 ))}
-                <td className="px-4 py-3 font-bold bg-yellow-50">{formatCurrency(cashFlowData.reduce((a,b)=>a+b.Egresos,0))}</td>
+                <td className="px-4 py-3 font-bold bg-[#FFCC00]/10 text-[#FFCC00]">{formatCurrency(cashFlowData.reduce((a,b)=>a+b.Egresos,0))}</td>
               </tr>
-              <tr className="bg-gray-50">
-                <td className="px-4 py-3 text-left font-bold text-liu-text">Utilidad</td>
+              <tr className="bg-[#111111]/50">
+                <td className="px-4 py-3 text-left font-bold text-white">Utilidad</td>
                 {cashFlowData.map((d, i) => (
-                  <td key={i} className={`px-2 py-3 font-medium ${d.Utilidad > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  <td key={i} className={`px-2 py-3 font-medium ${d.Utilidad > 0 ? 'text-green-400' : 'text-red-400'}`}>
                     {formatCurrency(d.Utilidad).replace('$', '')}
                   </td>
                 ))}
-                <td className="px-4 py-3 font-bold bg-yellow-100 text-liu-text">
+                <td className="px-4 py-3 font-bold bg-[#FFCC00]/20 text-[#FFCC00]">
                   {formatCurrency(cashFlowData.reduce((a,b)=>a+b.Utilidad,0))}
                 </td>
               </tr>

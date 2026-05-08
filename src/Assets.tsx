@@ -128,10 +128,8 @@ export const AssetsModule: React.FC = () => {
 
   return (
     <div className="space-y-8">
-      <h2 className="text-2xl font-bold text-liu-text">Gestión de Activos</h2>
-
       {/* Formulario para agregar activos */}
-      <Card>
+      <Card className="bg-[#1C1C1C] border-[#7F54F5]/20 text-gray-100">
         <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
           <Input
             label="Nombre del Activo"
@@ -164,10 +162,10 @@ export const AssetsModule: React.FC = () => {
       </Card>
 
       {/* Tabla de Activos */}
-      <Card noPadding>
+      <Card noPadding className="bg-[#1C1C1C] border-[#7F54F5]/20 overflow-hidden text-gray-100">
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
-            <thead className="bg-gray-100 text-gray-500 text-xs font-bold uppercase tracking-wider">
+            <thead className="bg-[#111111] text-gray-300 text-xs font-bold uppercase tracking-wider border-b border-[#7F54F5]/20">
               <tr>
                 <th className="px-4 py-3">Activo</th>
                 <th className="px-4 py-3">Fecha Compra</th>
@@ -175,17 +173,17 @@ export const AssetsModule: React.FC = () => {
                 <th className="px-4 py-3 text-right">Valor Inicial</th>
                 <th className="px-4 py-3 text-right">Dep. Anual</th>
                 <th className="px-4 py-3 text-right">Dep. Mensual</th>
-                <th className="px-4 py-3 text-right font-bold text-liu-text">Valor Actual</th>
+                <th className="px-4 py-3 text-right font-bold text-[#FFCC00]">Valor Actual</th>
                 <th className="px-4 py-3 text-right">Acciones</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-[#7F54F5]/20">
               {assets.map(asset => {
                 if (editingId === asset.id && currentAsset) {
                   const annualDepreciation = currentAsset.usefulLife > 0 ? currentAsset.initialValue / currentAsset.usefulLife : 0;
                   const currentValue = calculateCurrentValue(currentAsset);
                   return (
-                    <tr key={asset.id} className="bg-yellow-50">
+                    <tr key={asset.id} className="bg-[#FD8000]/10">
                       <td className="px-2 py-2"><Input name="name" value={currentAsset.name} onChange={handleEditInputChange} /></td>
                       <td className="px-2 py-2"><Input name="purchaseDate" type="date" value={currentAsset.purchaseDate} onChange={handleEditInputChange} /></td>
                       <td className="px-2 py-2 text-center"><Input name="usefulLife" type="number" step="any" value={currentAsset.usefulLife} onChange={handleEditInputChange} className="w-20 text-center" /></td>
@@ -206,9 +204,9 @@ export const AssetsModule: React.FC = () => {
                 const currentValue = calculateCurrentValue(asset);
                 const annualDepreciation = asset.usefulLife > 0 ? asset.initialValue / asset.usefulLife : 0;
                 return (
-                  <tr key={asset.id}>
-                    <td className="px-4 py-3 font-medium">{asset.name}</td>
-                    <td className="px-4 py-3 text-gray-600">{new Date(asset.purchaseDate + 'T00:00:00').toLocaleDateString('es-CL')}</td>
+                  <tr key={asset.id} className="hover:bg-[#111111]/50 transition-colors">
+                    <td className="px-4 py-3 font-medium text-gray-100">{asset.name}</td>
+                    <td className="px-4 py-3 text-gray-400">{new Date(asset.purchaseDate + 'T00:00:00').toLocaleDateString('es-CL')}</td>
                     <td className="px-4 py-3 text-center">{asset.usefulLife}</td>
                     <td className="px-4 py-3 text-right font-mono">{formatCurrency(asset.initialValue)}</td>
                     <td className="px-4 py-3 text-right font-mono text-red-500">-{formatCurrency(annualDepreciation)}</td>
@@ -223,7 +221,7 @@ export const AssetsModule: React.FC = () => {
                           variant="ghost" 
                           size="sm" 
                           onClick={() => handleDelete(asset.id)} 
-                          className="p-2 text-red-500 hover:bg-red-100 hover:text-red-700" 
+                          className="p-2 text-red-500/70 hover:bg-red-900/40 hover:text-red-400"
                           aria-label="Eliminar"
                         >
                           <Trash2 size={16} />
@@ -238,9 +236,9 @@ export const AssetsModule: React.FC = () => {
               )}
             </tbody>
             {assets.length > 0 && (
-              <tfoot className="bg-gray-50 border-t-2 border-gray-200">
+              <tfoot className="bg-[#111111] border-t border-[#7F54F5]/30">
                 <tr>
-                  <td colSpan={4} className="px-4 py-4 text-right font-bold text-gray-700 uppercase text-xs">Total Depreciación:</td>
+                  <td colSpan={4} className="px-4 py-4 text-right font-bold text-gray-300 uppercase text-xs">Total Depreciación:</td>
                   <td className="px-4 py-4 text-right font-mono font-bold text-red-500">-{formatCurrency(totals.annual)}</td>
                   <td className="px-4 py-4 text-right font-mono font-bold text-red-500">-{formatCurrency(totals.monthly)}</td>
                   <td colSpan={2}></td>

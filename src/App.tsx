@@ -157,14 +157,14 @@ const App: React.FC = () => {
   // --- End new functions ---
 
   return (
-    <div className="min-h-screen bg-gray-50 font-sans text-liu-text">
+    <div className="min-h-screen bg-[#111111] font-sans text-gray-100">
       {/* Top Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
+      <header className="bg-[#111111] border-b border-[#7F54F5]/30 sticky top-0 z-30 shadow-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
             <div className="flex items-center gap-3">
-              <div className="bg-liu w-8 h-8 rounded flex items-center justify-center font-black text-xs">LIU</div>
-              <span className="font-bold text-lg tracking-tight">Finance 2026</span>
+              <div className="bg-[#FFCC00] text-[#111111] w-8 h-8 rounded flex items-center justify-center font-black text-xs">LIU</div>
+              <span className="font-bold text-lg tracking-tight text-[#FFCC00]">Finance 2026</span>
             </div>
             
             <div className="flex items-center gap-4">
@@ -175,8 +175,8 @@ const App: React.FC = () => {
                     key={index}
                     to={item.to}
                     className={({ isActive }) =>
-                      `px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${
-                        isActive ? 'bg-gray-100 text-liu-text' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
+                      `px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 flex items-center gap-2 border ${
+                        isActive ? 'border-[#FD8000] text-[#FD8000] bg-[#FD8000]/10 shadow-sm' : 'border-transparent text-gray-300 hover:text-[#FD8000]'
                       }`
                     }
                   >
@@ -186,11 +186,11 @@ const App: React.FC = () => {
                 ))}
               </nav>
 
-              <div className="h-6 w-[1px] bg-gray-200"></div>
+              <div className="h-6 w-[1px] bg-[#7F54F5]/30"></div>
               
               <button 
                 onClick={() => setIsSettingsOpen(true)}
-                className="p-2 rounded-full hover:bg-gray-100 text-gray-500 transition-colors"
+                className="p-2 rounded-full border border-transparent hover:text-[#FD8000] text-gray-300 transition-all duration-200"
               >
                 <Building2 size={20} />
               </button>
@@ -216,20 +216,20 @@ const App: React.FC = () => {
       {/* Global Settings Modal */}
       {isSettingsOpen && (
         <div className="fixed inset-0 z-50 flex justify-end">
-           <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={() => setIsSettingsOpen(false)}></div>
-           <div className="relative w-full max-w-md bg-white h-full shadow-2xl p-6 overflow-y-auto animate-in slide-in-from-right duration-300">
+           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsSettingsOpen(false)}></div>
+           <div className="relative w-full max-w-md bg-[#1C1C1C] text-gray-100 h-full shadow-2xl p-6 overflow-y-auto animate-in slide-in-from-right duration-300 border-l border-[#7F54F5]/30">
              <div className="flex justify-between items-center mb-8">
                <h2 className="text-xl font-bold flex items-center gap-2">
-                 <Settings className="text-liu" /> Configuración de Agencia
+                 <Settings className="text-[#FFCC00]" /> Configuración de Agencia
                </h2>
-               <button onClick={() => setIsSettingsOpen(false)} className="p-1 hover:bg-gray-100 rounded-full">
+               <button onClick={() => setIsSettingsOpen(false)} className="p-1 hover:bg-[#FD8000] hover:text-white rounded-full transition-colors">
                  <X size={20} />
                </button>
              </div>
 
              <div className="space-y-6">
                 <div className="flex justify-center mb-6">
-                  <div className="w-40 h-20 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden border-2 border-dashed border-gray-300 relative group cursor-pointer">
+                  <div className="w-40 h-20 bg-[#7F54F5]/10 rounded-lg flex items-center justify-center overflow-hidden border-2 border-dashed border-[#7F54F5] relative group cursor-pointer">
                     <img src={settings.logoUrl} alt="Logo" className="max-w-full max-h-full object-contain" />
                     <div className="absolute inset-0 bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs font-bold">Cambiar</div>
                   </div>
@@ -239,30 +239,35 @@ const App: React.FC = () => {
                   label="Nombre de Fantasía" 
                   value={settings.companyName} 
                   onChange={(e) => handleUpdateSettings('companyName', e.target.value)}
+                  className="!bg-[#111111] !text-gray-100 !border-[#7F54F5]/30 placeholder-gray-500 focus:!border-[#FFCC00] focus:!ring-[#FFCC00]/50"
                 />
                 <Input 
                   label="RUT Empresa" 
                   value={settings.rut} 
                   onChange={(e) => handleUpdateSettings('rut', e.target.value)}
+                  className="!bg-[#111111] !text-gray-100 !border-[#7F54F5]/30 placeholder-gray-500 focus:!border-[#FFCC00] focus:!ring-[#FFCC00]/50"
                 />
                 <Input 
                   label="Dirección Comercial" 
                   value={settings.address} 
                   onChange={(e) => handleUpdateSettings('address', e.target.value)}
+                  className="!bg-[#111111] !text-gray-100 !border-[#7F54F5]/30 placeholder-gray-500 focus:!border-[#FFCC00] focus:!ring-[#FFCC00]/50"
                 />
                 <Input 
                   label="Email Contacto" 
                   value={settings.contactEmail} 
                   onChange={(e) => handleUpdateSettings('contactEmail', e.target.value)}
+                  className="!bg-[#111111] !text-gray-100 !border-[#7F54F5]/30 placeholder-gray-500 focus:!border-[#FFCC00] focus:!ring-[#FFCC00]/50"
                 />
                 <Input 
                   label="URL Logo" 
                   value={settings.logoUrl} 
                   onChange={(e) => handleUpdateSettings('logoUrl', e.target.value)}
+                  className="!bg-[#111111] !text-gray-100 !border-[#7F54F5]/30 placeholder-gray-500 focus:!border-[#FFCC00] focus:!ring-[#FFCC00]/50"
                 />
 
-                <div className="pt-6 border-t border-gray-100">
-                  <Button className="w-full" onClick={() => setIsSettingsOpen(false)}>Guardar Cambios</Button>
+                <div className="pt-6 border-t border-[#7F54F5]/30">
+                  <Button className="w-full bg-[#FD8000] text-white hover:bg-[#E07200] border-none shadow-sm transition-colors" onClick={() => setIsSettingsOpen(false)}>Guardar Cambios</Button>
                 </div>
              </div>
            </div>

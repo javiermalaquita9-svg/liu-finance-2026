@@ -182,9 +182,9 @@ export const QuotesModule: React.FC = () => {
       <div className="flex flex-col lg:flex-row gap-6 lg:items-start">
       {/* Sidebar Controls */}
       <div className="w-full lg:w-1/3 flex flex-col gap-6 pr-2 lg:sticky lg:top-24">
-        <Card className="p-0 overflow-hidden divide-y divide-gray-100">
+        <Card className="p-0 overflow-hidden divide-y divide-[#7F54F5]/20 bg-[#1C1C1C] border-[#7F54F5]/20 text-gray-100">
           <div className="px-5 py-4">
-            <h3 className="font-bold text-base text-liu-text">Configuración</h3>
+            <h3 className="font-bold text-base text-[#FFCC00]">Configuración</h3>
           </div>
 
           {/* Client Search */}
@@ -195,7 +195,7 @@ export const QuotesModule: React.FC = () => {
               value={clientSearch}
               onChange={(e) => setClientSearch(e.target.value)}
               onFocus={() => setSelectedClient(null)}
-              className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm text-liu-text focus:outline-none focus:ring-2 focus:ring-liu/50 focus:border-liu focus:bg-white transition-colors"
+              className="w-full bg-[#111111] border border-[#7F54F5]/30 rounded-lg px-3 py-2 text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#FD8000]/50 focus:border-[#FD8000] focus:bg-[#0D0D0D] transition-colors placeholder-gray-500"
             />
             {selectedClient && (
               <div className="mt-1.5 flex items-center gap-2 text-xs text-gray-500">
@@ -204,15 +204,15 @@ export const QuotesModule: React.FC = () => {
               </div>
             )}
             {clientSearch && !selectedClient && (
-              <div className="absolute left-5 right-5 top-full bg-white border border-gray-200 rounded-lg shadow-lg z-10 mt-1 max-h-44 overflow-y-auto">
+              <div className="absolute left-5 right-5 top-full bg-[#111111] border border-[#7F54F5]/30 rounded-lg shadow-lg z-10 mt-1 max-h-44 overflow-y-auto">
                 {filteredClients.map(c => (
                   <div
                     key={c.id}
-                    className="px-3 py-2.5 hover:bg-gray-50 cursor-pointer"
+                    className="px-3 py-2.5 hover:bg-[#1C1C1C] cursor-pointer transition-colors"
                     onClick={() => { setSelectedClient(c); setClientSearch(c.name); }}
                   >
-                    <div className="font-bold text-sm">{c.name}</div>
-                    <div className="text-gray-400 text-xs">{c.rut}</div>
+                    <div className="font-bold text-sm text-gray-100">{c.name}</div>
+                    <div className="text-gray-500 text-xs">{c.rut}</div>
                   </div>
                 ))}
                 {filteredClients.length === 0 && <div className="px-3 py-2.5 text-gray-400 text-sm">No encontrado</div>}
@@ -225,12 +225,12 @@ export const QuotesModule: React.FC = () => {
             <div>
               <label className="text-[10px] uppercase font-bold text-gray-400 tracking-wider mb-1.5 block">Entrega</label>
               <input type="date" value={deliveryDate} onChange={e => setDeliveryDate(e.target.value)}
-                className="w-full bg-gray-50 border border-gray-200 rounded-lg px-2 py-2 text-xs text-liu-text focus:outline-none focus:ring-2 focus:ring-liu/50 focus:bg-white transition-colors" />
+                className="w-full bg-[#111111] border border-[#7F54F5]/30 rounded-lg px-2 py-2 text-xs text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#FD8000]/50 focus:bg-[#0D0D0D] transition-colors" />
             </div>
             <div>
               <label className="text-[10px] uppercase font-bold text-gray-400 tracking-wider mb-1.5 block">Vencimiento</label>
               <input type="date" value={validUntil} onChange={e => setValidUntil(e.target.value)}
-                className="w-full bg-gray-50 border border-gray-200 rounded-lg px-2 py-2 text-xs text-liu-text focus:outline-none focus:ring-2 focus:ring-liu/50 focus:bg-white transition-colors" />
+                className="w-full bg-[#111111] border border-[#7F54F5]/30 rounded-lg px-2 py-2 text-xs text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#FD8000]/50 focus:bg-[#0D0D0D] transition-colors" />
             </div>
           </div>
 
@@ -244,7 +244,7 @@ export const QuotesModule: React.FC = () => {
                 placeholder="Buscar..."
                 value={serviceSearch}
                 onChange={(e) => setServiceSearch(e.target.value)}
-                className="w-full pl-8 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-liu/50 focus:bg-white transition-colors"
+                className="w-full pl-8 pr-3 py-2 bg-[#111111] border border-[#7F54F5]/30 rounded-lg text-xs text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#FD8000]/50 focus:bg-[#0D0D0D] placeholder-gray-500 transition-colors"
               />
             </div>
             <div className="flex flex-col gap-1 max-h-36 overflow-y-auto">
@@ -252,10 +252,10 @@ export const QuotesModule: React.FC = () => {
                 <button
                   key={s.id}
                   onClick={() => handleAddItem(s)}
-                  className="flex items-center gap-2 text-xs text-left px-3 py-2 rounded-lg bg-gray-50 hover:bg-gray-100 border border-transparent hover:border-gray-200 transition-colors"
+                  className="flex items-center gap-2 text-xs text-left px-3 py-2 rounded-lg bg-[#111111] hover:bg-[#111111]/80 border border-transparent hover:border-[#FD8000]/50 transition-colors"
                 >
-                  <Plus size={12} className="text-gray-400 shrink-0" />
-                  <span className="font-medium text-gray-700">{s.name}</span>
+                  <Plus size={12} className="text-[#FD8000] shrink-0" />
+                  <span className="font-medium text-gray-200">{s.name}</span>
                 </button>
               ))}
             </div>
@@ -267,14 +267,14 @@ export const QuotesModule: React.FC = () => {
             <div className="flex flex-wrap gap-1.5 mb-2">
               {termTemplates.map(template => (
                 <button key={template.id} onClick={() => setTerms(template.content)}
-                  className="flex items-center gap-1 text-[10px] px-2 py-1 rounded border border-gray-200 bg-gray-50 hover:bg-gray-100 font-medium text-gray-600 transition-colors">
+                  className="flex items-center gap-1 text-[10px] px-2 py-1 rounded border border-[#7F54F5]/30 bg-[#111111] hover:bg-[#111111]/80 font-medium text-gray-300 hover:text-white transition-colors">
                   <FileText size={10} />
                   {template.name}
                 </button>
               ))}
             </div>
             <textarea
-              className="w-full h-20 text-xs p-2.5 border border-gray-200 rounded-lg bg-gray-50 resize-none focus:outline-none focus:ring-2 focus:ring-liu/50 focus:bg-white transition-colors"
+              className="w-full h-20 text-xs p-2.5 border border-[#7F54F5]/30 rounded-lg bg-[#111111] text-gray-100 placeholder-gray-500 resize-none focus:outline-none focus:ring-2 focus:ring-[#FD8000]/50 focus:bg-[#0D0D0D] transition-colors"
               value={terms}
               onChange={(e) => setTerms(e.target.value)}
               placeholder="Términos y condiciones..."
@@ -290,10 +290,10 @@ export const QuotesModule: React.FC = () => {
       </div>
 
       {/* A4 Preview */}
-      <div className="w-full lg:w-2/3 bg-gray-200 rounded-xl p-8 overflow-y-auto flex justify-center shadow-inner">
+      <div className="w-full lg:w-2/3 bg-[#0D0D0D] rounded-xl p-8 overflow-y-auto flex justify-center shadow-inner">
         <div 
           id="quote-preview"
-          className="bg-white shadow-2xl w-[210mm] min-h-[297mm] p-[15mm] flex flex-col justify-between text-sm relative"
+          className="bg-white text-gray-800 shadow-2xl w-[210mm] min-h-[297mm] p-[15mm] flex flex-col justify-between text-sm relative"
         >
           {/* Header */}
           <div className="flex justify-between items-start mb-8">
@@ -380,7 +380,7 @@ export const QuotesModule: React.FC = () => {
                        <input 
                         type="number"
                         min="1"
-                        className="w-12 text-center border-b border-transparent hover:border-gray-300 focus:outline-none focus:border-liu bg-transparent"
+                        className="w-12 text-center text-black border-b border-transparent hover:border-gray-300 focus:outline-none focus:border-[#FD8000] bg-transparent"
                         value={item.quantity} 
                         onChange={(e) => updateItem(item.id, 'quantity', parseInt(e.target.value))}
                       />
@@ -444,22 +444,22 @@ export const QuotesModule: React.FC = () => {
       </div>
       {/* Quote History */}
       <div className="w-full">
-        <h2 className="text-2xl font-bold text-liu-text mb-4">Historial de Cotizaciones</h2>
+        <h2 className="text-2xl font-bold text-[#FFCC00] mb-4">Historial de Cotizaciones</h2>
         
         {/* Filtros del Historial */}
-        <Card className="mb-6">
+        <Card className="mb-6 bg-[#1C1C1C] border-[#7F54F5]/20 text-gray-100">
           <div className="flex flex-col md:flex-row gap-4 items-end">
             <div className="flex-grow">
               <label className="text-[10px] uppercase font-bold text-gray-500 mb-1 tracking-wider">Filtrar por Estado</label>
-              <div className="flex flex-wrap gap-1 bg-gray-100 p-1 rounded-lg">
+              <div className="flex flex-wrap gap-1 bg-[#111111] p-1 rounded-lg">
                 {(['Todos', ...Object.values(QuoteStatus)]).map(s => (
                   <button
                     key={s}
                     onClick={() => setStatusFilter(s as QuoteStatus | 'Todos')}
                     className={`px-3 py-1.5 text-xs rounded-md font-medium transition-colors flex-1 md:flex-none ${
                       statusFilter === s
-                        ? 'bg-white shadow-sm text-liu-text'
-                        : 'text-gray-500 hover:bg-gray-200'
+                        ? 'bg-[#FD8000] shadow-sm text-white'
+                        : 'text-gray-400 hover:bg-[#1C1C1C]'
                     }`}
                   >
                     {s}
@@ -484,10 +484,10 @@ export const QuotesModule: React.FC = () => {
           </div>
         </Card>
 
-        <Card noPadding>
+        <Card noPadding className="bg-[#1C1C1C] border-[#7F54F5]/20 text-gray-100 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left">
-              <thead className="bg-gray-100 text-gray-500 text-xs font-bold uppercase tracking-wider">
+              <thead className="bg-[#111111] text-gray-300 text-xs font-bold uppercase tracking-wider border-b border-[#7F54F5]/20">
                 <tr>
                   <th className="px-4 py-3">Cliente</th>
                   <th className="px-4 py-3">Fecha</th>
@@ -496,26 +496,26 @@ export const QuotesModule: React.FC = () => {
                   <th className="px-4 py-3 text-right">Acciones</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-[#7F54F5]/20">
                 {filteredQuotes.slice().reverse().map(q => (
-                  <tr key={q.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 font-medium">{q.clientName}</td>
-                    <td className="px-4 py-3 text-gray-600">{new Date(q.date).toLocaleDateString('es-CL')}</td>
+                  <tr key={q.id} className="hover:bg-[#111111]/50 transition-colors">
+                    <td className="px-4 py-3 font-medium text-gray-100">{q.clientName}</td>
+                    <td className="px-4 py-3 text-gray-400">{new Date(q.date).toLocaleDateString('es-CL')}</td>
                     <td className="px-4 py-3 text-right font-mono">{formatCurrency(q.total * 1.19)}</td>
                     <td className="px-4 py-3 text-center">
                         <select
                           value={q.status}
                           onChange={(e) => handleStatusChange(q.id, e.target.value as QuoteStatus)}
-                          className={`px-2 py-1 text-[10px] rounded-full font-bold border-transparent focus:ring-2 focus:ring-liu/50 appearance-none text-center cursor-pointer ${
-                            q.status === QuoteStatus.APPROVED ? 'bg-green-100 text-green-700' :
-                            q.status === QuoteStatus.REJECTED ? 'bg-red-100 text-red-700' :
-                            q.status === QuoteStatus.SENT ? 'bg-blue-100 text-blue-700' :
-                            'bg-gray-100 text-gray-600'
+                          className={`px-2 py-1 text-[10px] rounded-full font-bold border-transparent focus:ring-2 focus:ring-[#FFCC00]/50 appearance-none text-center cursor-pointer ${
+                            q.status === QuoteStatus.APPROVED ? 'bg-green-900/40 text-green-400' :
+                            q.status === QuoteStatus.REJECTED ? 'bg-red-900/40 text-red-400' :
+                            q.status === QuoteStatus.SENT ? 'bg-blue-900/40 text-blue-400' :
+                            'bg-white/10 text-gray-300'
                           }`}
                           onClick={(e) => e.stopPropagation()}
                         >
                           {Object.values(QuoteStatus).map(s => (
-                            <option key={s} value={s} className="bg-white text-black">{s}</option>
+                            <option key={s} value={s} className="bg-[#111111] text-gray-100">{s}</option>
                           ))}
                         </select>
                     </td>
@@ -530,7 +530,7 @@ export const QuotesModule: React.FC = () => {
                               handleDeleteQuote(q.id);
                             }
                           }}
-                          className="w-9 p-0 text-red-500 hover:bg-red-100 hover:text-red-700"
+                          className="w-9 p-0 text-red-500/70 hover:bg-red-900/40 hover:text-red-400"
                           aria-label="Eliminar"
                         >
                           <Trash2 size={16} />
@@ -546,10 +546,10 @@ export const QuotesModule: React.FC = () => {
                 )}
               </tbody>
               {filteredQuotes.length > 0 && (
-                <tfoot className="bg-gray-50 border-t-2 border-gray-200">
+                <tfoot className="bg-[#111111] border-t border-[#7F54F5]/30">
                   <tr>
-                    <td colSpan={2} className="px-4 py-4 text-right font-bold text-liu-text uppercase tracking-wider">Total Filtrado</td>
-                    <td className="px-4 py-4 text-right font-bold font-mono text-liu-text text-base">
+                    <td colSpan={2} className="px-4 py-4 text-right font-bold text-gray-300 uppercase tracking-wider">Total Filtrado</td>
+                    <td className="px-4 py-4 text-right font-bold font-mono text-[#FFCC00] text-base">
                       {formatCurrency(totalFilteredSum)}
                     </td>
                     <td colSpan={2}></td>

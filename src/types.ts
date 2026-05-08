@@ -18,6 +18,7 @@ export interface AgencyService {
   hours: number;
   margin: number; // Percentage 0-100
   price: number;
+  category?: string;
 }
 
 export interface AgencyClient {
