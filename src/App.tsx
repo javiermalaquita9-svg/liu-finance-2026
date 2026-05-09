@@ -64,15 +64,39 @@ const App: React.FC = () => {
     return saved ? JSON.parse(saved) : [];
   });
 
+  // Función auxiliar para evitar bucles infinitos de sincronización entre pestañas
+  const saveToStorage = (key: string, data: any) => {
+    const stringified = JSON.stringify(data);
+    if (localStorage.getItem(key) !== stringified) {
+      localStorage.setItem(key, stringified);
+    }
+  };
+
   // Effects for Persistence
-  useEffect(() => localStorage.setItem('liu_settings', JSON.stringify(settings)), [settings]);
-  useEffect(() => localStorage.setItem('liu_costs', JSON.stringify(costs)), [costs]);
-  useEffect(() => localStorage.setItem('liu_services', JSON.stringify(services)), [services]);
-  useEffect(() => localStorage.setItem('liu_clients', JSON.stringify(clients)), [clients]);
-  useEffect(() => localStorage.setItem('liu_quotes', JSON.stringify(quotes)), [quotes]);
-  useEffect(() => localStorage.setItem('liu_assets', JSON.stringify(assets)), [assets]);
-  useEffect(() => localStorage.setItem('liu_term_templates', JSON.stringify(termTemplates)), [termTemplates]);
-  useEffect(() => localStorage.setItem('liu_monthly_sales', JSON.stringify(monthlySales)), [monthlySales]);
+  useEffect(() => saveToStorage('liu_settings', settings), [settings]);
+  useEffect(() => saveToStorage('liu_costs', costs), [costs]);
+  useEffect(() => saveToStorage('liu_services', services), [services]);
+  useEffect(() => saveToStorage('liu_clients', clients), [clients]);
+  useEffect(() => saveToStorage('liu_quotes', quotes), [quotes]);
+  useEffect(() => saveToStorage('liu_assets', assets), [assets]);
+  useEffect(() => saveToStorage('liu_term_templates', termTemplates), [termTemplates]);
+  useEffect(() => saveToStorage('liu_monthly_sales', monthlySales), [monthlySales]);
+
+  // Sincronización entre pestañas
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'liu_settings' && e.newValue) setSettings(JSON.parse(e.newValue));
+      if (e.key === 'liu_costs' && e.newValue) setCosts(JSON.parse(e.newValue));
+      if (e.key === 'liu_services' && e.newValue) setServices(JSON.parse(e.newValue));
+      if (e.key === 'liu_clients' && e.newValue) setClients(JSON.parse(e.newValue));
+      if (e.key === 'liu_quotes' && e.newValue) setQuotes(JSON.parse(e.newValue));
+      if (e.key === 'liu_assets' && e.newValue) setAssets(JSON.parse(e.newValue));
+      if (e.key === 'liu_term_templates' && e.newValue) setTermTemplates(JSON.parse(e.newValue));
+      if (e.key === 'liu_monthly_sales' && e.newValue) setMonthlySales(JSON.parse(e.newValue));
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
 
   // Derived Calculations
 
@@ -113,6 +137,19 @@ const App: React.FC = () => {
 
   const handleUpdateSettings = (key: keyof AgencySettings, value: any) => {
     setSettings(prev => ({ ...prev, [key]: value }));
+  };
+
+  // --- New functions for Costs ---
+  const handleAddCost = (newCost: AgencyCost) => {
+    setCosts((prev) => [...prev, newCost]);
+  };
+
+  const handleUpdateCost = (id: string, amount: number) => {
+    setCosts((prev) => prev.map((c) => (c.id === id ? { ...c, amount } : c)));
+  };
+
+  const handleDeleteCost = (id: string) => {
+    setCosts((prev) => prev.filter((c) => c.id !== id));
   };
 
   // --- New functions for Services and Clients ---
@@ -205,7 +242,7 @@ const App: React.FC = () => {
         <Outlet
           context={{ // Pasamos la lista de costos que ya incluye la depreciación
             costs: costsWithDepreciation, monthlySales, setMonthlySales,
-            setCosts, services, setServices, clients, setClients, quotes, setQuotes, settings, handleUpdateSettings, bepHourlyRate, assets, setAssets,
+            handleAddCost, handleUpdateCost, handleDeleteCost, services, setServices, clients, setClients, quotes, setQuotes, settings, handleUpdateSettings, bepHourlyRate, assets, setAssets,
             handleAddService, handleUpdateService, handleDeleteService,
             handleAddClient, handleUpdateClient, handleDeleteClient, handleUpdateQuote, handleDeleteQuote,
             termTemplates, setTermTemplates

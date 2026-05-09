@@ -9,7 +9,9 @@ import { formatCurrency, generateId } from '../../utils/formatters';
 
 interface AgencyContextType {
   costs: AgencyCost[];
-  setCosts: (costs: AgencyCost[]) => void;
+  handleAddCost: (cost: AgencyCost) => void;
+  handleUpdateCost: (id: string, amount: number) => void;
+  handleDeleteCost: (id: string) => void;
   settings: AgencySettings;
   handleUpdateSettings: (key: keyof AgencySettings, value: any) => void;
 }
@@ -17,7 +19,7 @@ interface AgencyContextType {
 const DEPRECIATION_ID = 'depreciation-virtual-cost';
 
 export const CostsModule: React.FC = () => {
-  const { costs, setCosts, settings, handleUpdateSettings } = useOutletContext<AgencyContextType>();
+  const { costs, handleAddCost, handleUpdateCost, handleDeleteCost, settings, handleUpdateSettings } = useOutletContext<AgencyContextType>();
 
   const capacity = settings.capacityHours;
   const setCapacity = (val: number) => handleUpdateSettings('capacityHours', val);
@@ -40,7 +42,7 @@ export const CostsModule: React.FC = () => {
   const depreciationCosts = costs.filter(c => c.id === DEPRECIATION_ID);
   const activeCosts = activeTab === 'fixed' ? fixedCosts : activeTab === 'variable' ? variableCosts : depreciationCosts;
 
-  const handleAddCost = () => {
+  const createNewCost = () => {
     if (!newCostName.trim() || !newCostAmount) return;
     const newCost: AgencyCost = {
       id: generateId(),
@@ -49,13 +51,13 @@ export const CostsModule: React.FC = () => {
       type: newCostType,
       category: 'General',
     };
-    setCosts([...costs, newCost]);
+    handleAddCost(newCost);
     setNewCostName('');
     setNewCostAmount('');
   };
 
   const handleDelete = (id: string) => {
-    setCosts(costs.filter(c => c.id !== id));
+    handleDeleteCost(id);
     setDeletingId(null);
   };
 
@@ -63,13 +65,13 @@ export const CostsModule: React.FC = () => {
     if (!editingCost) return;
     const amount = parseInt(editingCost.amount);
     if (!isNaN(amount) && amount >= 0) {
-      setCosts(costs.map(c => c.id === editingCost.id ? { ...c, amount } : c));
+      handleUpdateCost(editingCost.id, amount);
     }
     setEditingCost(null);
   };
 
   const handleFormKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') handleAddCost();
+    if (e.key === 'Enter') createNewCost();
   };
 
   const tabs = [
@@ -82,21 +84,21 @@ export const CostsModule: React.FC = () => {
     <div className="space-y-6">
       {/* KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="bg-[#1C1C1C] border-none text-gray-100 border-l-4 border-l-[#FFCC00]">
+        <Card className="bg-tech-card border-none text-gray-100 border-l-4 border-l-liu">
           <div className="flex items-center justify-between text-gray-400 text-xs uppercase font-bold tracking-wider mb-2">
             <span>Costos Totales</span>
             <DollarSign size={16} />
           </div>
-          <div className="text-2xl font-bold text-[#FFCC00]">{formatCurrency(totalCosts)}</div>
+          <div className="text-2xl font-bold text-liu">{formatCurrency(totalCosts)}</div>
           {totalCosts > 0 ? (
             <div className="mt-3">
               <div className="flex h-1.5 rounded-full overflow-hidden bg-[#111111]">
-                <div style={{ width: `${fixedPercent}%` }} className="bg-[#7F54F5] transition-all duration-500" />
-                <div style={{ width: `${100 - fixedPercent}%` }} className="bg-[#FD8000] transition-all duration-500" />
+                <div style={{ width: `${fixedPercent}%` }} className="bg-tech-purple transition-all duration-500" />
+                <div style={{ width: `${100 - fixedPercent}%` }} className="bg-tech-orange transition-all duration-500" />
               </div>
               <div className="flex justify-between text-[10px] mt-1">
-                <span className="text-[#7F54F5]">Fijos {fixedPercent.toFixed(0)}%</span>
-                <span className="text-[#FD8000]">Variables {(100 - fixedPercent).toFixed(0)}%</span>
+                <span className="text-tech-purple">Fijos {fixedPercent.toFixed(0)}%</span>
+                <span className="text-tech-orange">Variables {(100 - fixedPercent).toFixed(0)}%</span>
               </div>
             </div>
           ) : (
@@ -104,7 +106,7 @@ export const CostsModule: React.FC = () => {
           )}
         </Card>
 
-        <Card className="bg-[#1C1C1C] border-none text-gray-100 border-l-4 border-l-[#7F54F5]">
+        <Card className="bg-tech-card border-none text-gray-100 border-l-4 border-l-tech-purple">
           <div className="flex items-center justify-between text-gray-400 text-xs uppercase font-bold tracking-wider mb-2">
             <span>Capacidad (Hrs)</span>
             <Activity size={16} />
@@ -114,34 +116,34 @@ export const CostsModule: React.FC = () => {
               type="number"
               value={capacity}
               onChange={(e) => setCapacity(Number(e.target.value))}
-              className="text-2xl font-bold text-[#FFCC00] bg-transparent w-full focus:outline-none border-b border-dashed border-[#7F54F5]/50 focus:border-[#FFCC00]"
+              className="text-2xl font-bold text-liu bg-transparent w-full focus:outline-none border-b border-dashed border-tech-purple/50 focus:border-liu"
             />
           </div>
           <div className="text-xs text-gray-400 mt-1">Mensual</div>
         </Card>
 
-        <Card className="bg-[#1C1C1C] border-none text-gray-100 border-l-4 border-l-[#FD8000]">
+        <Card className="bg-tech-card border-none text-gray-100 border-l-4 border-l-tech-orange">
           <div className="flex items-center justify-between text-gray-400 text-xs uppercase font-bold tracking-wider mb-2">
             <span>Valor Hora B.E.P.</span>
             <PieChart size={16} />
           </div>
-          <div className="text-2xl font-bold text-[#FFCC00]">{formatCurrency(bep)}</div>
+          <div className="text-2xl font-bold text-liu">{formatCurrency(bep)}</div>
           <div className="text-xs text-gray-400 mt-1">Punto de equilibrio</div>
         </Card>
 
-        <Card className="bg-[#1C1C1C] border-none text-gray-100 border-l-4 border-l-gray-500">
+        <Card className="bg-tech-card border-none text-gray-100 border-l-4 border-l-gray-500">
           <div className="flex items-center justify-between text-gray-400 text-xs uppercase font-bold tracking-wider mb-2">
             <span>Proyección Anual</span>
             <TrendingUp size={16} />
           </div>
-          <div className="text-2xl font-bold text-[#FFCC00]">{formatCurrency(totalCosts * 12)}</div>
+          <div className="text-2xl font-bold text-liu">{formatCurrency(totalCosts * 12)}</div>
           <div className="text-xs text-gray-400 mt-1">Sin inflación</div>
         </Card>
       </div>
 
       {/* Input row — hidden on Depreciación tab */}
       {activeTab !== 'depreciation' && (
-        <div className="flex flex-col md:flex-row gap-4 items-end bg-[#1C1C1C] p-4 rounded-xl border border-[#7F54F5]/20 shadow-sm">
+        <div className="flex flex-col md:flex-row gap-4 items-end bg-tech-card p-4 rounded-xl border border-tech-purple/20 shadow-sm">
           <Input
             label="Nombre del ítem"
             placeholder="Ej: Arriendo Oficina"
@@ -164,33 +166,33 @@ export const CostsModule: React.FC = () => {
             <select
               value={newCostType}
               onChange={(e) => setNewCostType(e.target.value as CostType)}
-              className="h-10 bg-[#111111] border border-[#7F54F5]/30 text-gray-100 rounded-lg px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#FFCC00]/50"
+              className="h-10 bg-[#111111] border border-tech-purple/30 text-gray-100 rounded-lg px-3 text-sm focus:outline-none focus:ring-2 focus:ring-liu/50"
             >
               <option value={CostType.FIXED}>Fijo</option>
               <option value={CostType.VARIABLE}>Variable</option>
             </select>
           </div>
-          <Button onClick={handleAddCost} icon={<Plus size={18} />}>Agregar</Button>
+          <Button onClick={createNewCost} icon={<Plus size={18} />}>Agregar</Button>
         </div>
       )}
 
       {/* Tabs + Table */}
-      <Card noPadding className="overflow-hidden bg-[#1C1C1C] border-none text-gray-100">
+      <Card noPadding className="overflow-hidden bg-tech-card border-none text-gray-100">
         {/* Tab header */}
-        <div className="flex border-b border-[#7F54F5]/20 bg-[#111111]">
+        <div className="flex border-b border-tech-purple/20 bg-[#111111]">
           {tabs.map(tab => (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
               className={`flex items-center gap-2 px-5 py-3.5 text-sm font-medium transition-all border-b-2 ${
                 activeTab === tab.key
-                  ? 'border-[#FFCC00] text-[#FFCC00]'
+                  ? 'border-liu text-liu'
                   : 'border-transparent text-gray-400 hover:text-gray-200 hover:border-white/20'
               }`}
             >
               {tab.label}
               <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
-                activeTab === tab.key ? 'bg-[#FFCC00]/20 text-[#FFCC00]' : 'bg-white/10 text-gray-500'
+                activeTab === tab.key ? 'bg-liu/20 text-liu' : 'bg-white/10 text-gray-500'
               }`}>
                 {tab.count}
               </span>
@@ -199,7 +201,7 @@ export const CostsModule: React.FC = () => {
         </div>
 
         <table className="w-full text-sm text-left">
-          <thead className="bg-[#111111] text-gray-300 uppercase text-xs font-bold tracking-wider border-b border-[#7F54F5]/20">
+          <thead className="bg-[#111111] text-gray-300 uppercase text-xs font-bold tracking-wider border-b border-tech-purple/20">
             <tr>
               <th className="px-6 py-4">Ítem de Costo</th>
               <th className="px-6 py-4">Tipo</th>
@@ -207,7 +209,7 @@ export const CostsModule: React.FC = () => {
               <th className="px-6 py-4 text-right">Acciones</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#7F54F5]/20">
+          <tbody className="divide-y divide-tech-purple/20">
             {activeCosts.map((cost) => {
               const isDepreciation = cost.id === DEPRECIATION_ID;
               const isDeleting = deletingId === cost.id;
@@ -221,8 +223,8 @@ export const CostsModule: React.FC = () => {
                   <td className="px-6 py-4 font-medium text-gray-100">{cost.name}</td>
                   <td className="px-6 py-4">
                     <span className={`px-2 py-1 rounded-full text-[10px] uppercase font-bold tracking-wide bg-[#111111] ${
-                      isDepreciation ? 'text-[#FFCC00]' :
-                      cost.type === CostType.FIXED ? 'text-[#7F54F5]' : 'text-[#FD8000]'
+                      isDepreciation ? 'text-liu' :
+                      cost.type === CostType.FIXED ? 'text-tech-purple' : 'text-tech-orange'
                     }`}>
                       {isDepreciation ? 'Depreciación' : cost.type}
                     </span>
@@ -239,12 +241,12 @@ export const CostsModule: React.FC = () => {
                           if (e.key === 'Escape') setEditingCost(null);
                         }}
                         autoFocus
-                        className="w-32 bg-[#111111] border border-[#FFCC00]/50 rounded px-2 py-1 text-right text-[#FFCC00] focus:outline-none focus:ring-1 focus:ring-[#FFCC00]/50"
+                        className="w-32 bg-[#111111] border border-liu/50 rounded px-2 py-1 text-right text-liu focus:outline-none focus:ring-1 focus:ring-liu/50"
                       />
                     ) : (
                       <span
                         onClick={() => !isDepreciation && setEditingCost({ id: cost.id, amount: String(cost.amount) })}
-                        className={`group inline-flex items-center gap-1 ${!isDepreciation ? 'cursor-pointer hover:text-[#FFCC00]' : ''}`}
+                        className={`group inline-flex items-center gap-1 ${!isDepreciation ? 'cursor-pointer hover:text-liu' : ''}`}
                         title={!isDepreciation ? 'Click para editar' : undefined}
                       >
                         {formatCurrency(cost.amount)}
@@ -291,9 +293,9 @@ export const CostsModule: React.FC = () => {
                 <td colSpan={4} className="px-6 py-16 text-center">
                   <div className="flex flex-col items-center gap-3 text-gray-500">
                     <div className="w-12 h-12 rounded-full bg-[#111111] flex items-center justify-center">
-                      {activeTab === 'fixed' && <DollarSign size={22} className="text-[#7F54F5]/60" />}
-                      {activeTab === 'variable' && <TrendingUp size={22} className="text-[#FD8000]/60" />}
-                      {activeTab === 'depreciation' && <PieChart size={22} className="text-[#FFCC00]/60" />}
+                      {activeTab === 'fixed' && <DollarSign size={22} className="text-tech-purple/60" />}
+                      {activeTab === 'variable' && <TrendingUp size={22} className="text-tech-orange/60" />}
+                      {activeTab === 'depreciation' && <PieChart size={22} className="text-liu/60" />}
                     </div>
                     <p className="font-semibold text-sm text-gray-400">
                       {activeTab === 'fixed' && 'Sin costos fijos aún'}
@@ -312,12 +314,12 @@ export const CostsModule: React.FC = () => {
           </tbody>
 
           {activeCosts.length > 0 && (
-            <tfoot className="bg-[#111111] border-t border-[#7F54F5]/20">
+            <tfoot className="bg-[#111111] border-t border-tech-purple/20">
               <tr>
                 <td colSpan={2} className="px-6 py-3 text-right text-xs font-bold text-gray-400 uppercase tracking-wider">
                   Subtotal:
                 </td>
-                <td className="px-6 py-3 text-right font-mono font-bold text-[#FFCC00]">
+                <td className="px-6 py-3 text-right font-mono font-bold text-liu">
                   {formatCurrency(activeCosts.reduce((acc, c) => acc + c.amount, 0))}
                 </td>
                 <td />
