@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+// @ts-ignore — html2pdf.js no tiene tipos TypeScript
+import html2pdf from 'html2pdf.js';
 import { useOutletContext, Link } from 'react-router-dom'; // <--- IMPORTANTE
 import { Search, Plus, Trash2, Download, FileText, Edit } from 'lucide-react';
 import { AgencyClient, AgencyService, AgencyQuote, QuoteStatus, QuoteItem, AgencySettings, TermTemplate } from '../../types';
@@ -100,27 +102,19 @@ export const QuotesModule: React.FC = () => {
     const element = document.getElementById('quote-preview');
     if (!element) return;
 
-    // @ts-ignore
-    if (window.html2pdf) {
-      // Ocultar elementos interactivos que no deben aparecer en el PDF
-      const pdfHideEls = element.querySelectorAll('[data-pdf-hide]');
-      pdfHideEls.forEach(el => ((el as HTMLElement).style.display = 'none'));
+    const pdfHideEls = element.querySelectorAll('[data-pdf-hide]');
+    pdfHideEls.forEach(el => ((el as HTMLElement).style.display = 'none'));
 
-      const opt = {
-        margin: 0,
-        filename: `Cotizacion_${newQuote.clientName}_${new Date(newQuote.date).toISOString().split('T')[0]}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, scrollY: 0 },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-      };
-      // @ts-ignore
-      window.html2pdf().set(opt).from(element).save().then(() => {
-        // Restaurar visibilidad tras generar el PDF
-        pdfHideEls.forEach(el => ((el as HTMLElement).style.display = ''));
-      });
-    } else {
-      alert("La librería PDF aún está cargando. Intente en unos segundos.");
-    }
+    const opt = {
+      margin: 0,
+      filename: `Cotizacion_${newQuote.clientName}_${new Date(newQuote.date).toISOString().split('T')[0]}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true, scrollY: 0 },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+    html2pdf().set(opt).from(element).save().then(() => {
+      pdfHideEls.forEach(el => ((el as HTMLElement).style.display = ''));
+    });
   };
 
   const handleLoadQuote = (quoteToLoad: AgencyQuote) => {
